@@ -1,41 +1,29 @@
 # AI Research + Job Copilot
 
-Local-first career intelligence app for analyzing resume-job fit, extracting skill gaps, generating tailored project ideas, and drafting application materials.
+An MVP for analyzing resume-job fit, identifying skill gaps, and generating targeted project and interview suggestions.
 
-## What Works Today
+## Current MVP
 
-- Resume upload from `.pdf` and `.txt`
-- Automatic resume text extraction into the editor
-- Job description analysis
-- Rule-based fit scoring and ATS-style score
-- Matched and missing skill detection
-- Project suggestions, recruiter notes, interview questions, and next steps
-- Cover letter snippet, cold email snippet, and portfolio pitch
-- Local Ollama integration with `llama3.2:1b`
-- Local browser save history
-- Optional Supabase sync scaffolding
+- Resume text + job description input flow
+- Server-side fit analysis endpoint
+- Match score, skill overlap, missing skills, project ideas, and interview prep suggestions
+- UI designed for future expansion into chat, saved sessions, and real LLM workflows
+- Real `.txt` and `.pdf` resume ingestion with extracted text loaded into the form
+- Typed saved-analysis models with local browser storage fallback
+- Real Supabase-ready client helpers plus optional remote sync for saved analyses when env vars are present
+- Local-first LLM support through Ollama, with OpenAI and mock fallback modes
 
-## Recommended Local Run Mode
+## Planned Next Steps
 
-`next dev` has been flaky with asset serving in this environment, so the stable path is the production local server:
-
-```bash
-npm install
-npm run local
-```
-
-Then open `http://localhost:3002`.
-
-## Available Scripts
-
-- `npm run local` builds the app and starts the stable local server on port `3002`
-- `npm run build` creates the production build
-- `npm run start -- --port 3002` starts the production build manually
-- `npm run dev` starts the Next.js dev server
+1. Add Supabase auth screens and user-specific saved history
+2. Plug in embeddings and retrieval for better matching
+3. Add model-powered bullet rewriting and cover letter drafting
+4. Introduce prompt versioning and evaluation metrics
+5. Add a conversational chat mode over resume + job context
 
 ## Environment
 
-### LLM
+LLM variables:
 
 - `LLM_PROVIDER` can be `ollama`, `openai`, or `mock`
 - `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`
@@ -44,37 +32,32 @@ Then open `http://localhost:3002`.
 - `OPENAI_BASE_URL`
 - `OPENAI_MODEL`
 
-### Optional Supabase
+Optional Supabase variables:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SUPABASE_TABLE` defaults to `saved_analyses`
 
-If Supabase env vars are missing, saved analyses stay in local browser storage.
+If they are missing, the app keeps using local browser storage for saved analyses. If they are present, the app will also try to insert each saved analysis into Supabase through its REST API.
 
 ## How To Use
 
-1. Start the app with `npm run local`.
-2. Open `http://localhost:3002`.
-3. Upload a resume PDF or TXT file.
-4. Confirm the extracted text appears in the resume field.
-5. Paste a job description.
-6. Click `Analyze Fit`.
-7. Review the fit score, gaps, project ideas, and generated drafts.
-8. Click `Save analysis` to keep a local history.
+1. Run `npm install` once.
+2. Start the app with `npm run dev`.
+3. Open `http://localhost:3000`.
+4. Paste your resume text, a job description, and optional name/company.
+5. Click `Analyze Fit` to generate the project, interview, recruiter, and outreach suggestions.
+6. Use `Save analysis` to store the result locally, and Supabase will sync it too if configured.
 
-## Current Gaps
+## Supabase Setup
 
-- No login/signup yet
-- No 2FA yet
-- No chat mode over resume + job description yet
-- No full dashboard/history page yet
-- No company web research layer yet
+Create a table like `saved_analyses` with JSONB columns for `input` and `result`, plus text columns for `id`, `source`, `created_at`, and `updated_at`. Add an insert policy for the anon key if you want browser writes to work.
 
-## Next Planned Upgrades
+## Local Development
 
-1. Automatic company and role research layer
-2. Better JD parsing with must-have vs nice-to-have extraction
-3. Smarter gap-closing project recommendation engine
-4. Auth and saved-analysis dashboard
-5. Resume bullet rewriting and richer drafting
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.

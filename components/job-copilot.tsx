@@ -136,23 +136,91 @@ const demoResume = `Built data-driven web apps with React, Next.js, Node.js, Pyt
 
 const demoJob = `We are hiring an AI Engineer with experience in Python, TypeScript, React, LLM applications, RAG pipelines, vector database workflows, prompt engineering, AWS, Docker, and testing. The ideal candidate can build product-facing AI assistants and evaluate model outputs.`;
 
+function extractEmail(text: string) {
+  const match = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match?.[0] ?? "";
+}
+
+function extractNameFromResume(text: string, email?: string) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  for (const line of lines) {
+    if (
+      line.length < 3 ||
+      line.length > 40 ||
+      /@|https?:\/\/|linkedin|github|\+?\d/.test(line) ||
+      /engineer|developer|scientist|student|resume|curriculum vitae/i.test(line)
+    ) {
+      continue;
+    }
+
+    const words = line.split(/\s+/);
+    if (words.length >= 2 && words.length <= 4) {
+      return words
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }
+  }
+
+  if (email) {
+    const prefix = email.split("@")[0]?.replace(/[._-]+/g, " ").trim();
+    if (prefix) {
+      return prefix
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }
+  }
+
+  return "";
+}
+
 export function JobCopilot() {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [targetRole, setTargetRole] = useState("AI Engineer");
   const [companyName, setCompanyName] = useState("");
-  const [resumeText, setResumeText] = useState(demoResume);
-  const [jobDescription, setJobDescription] = useState(demoJob);
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [enableCompanyResearch, setEnableCompanyResearch] = useState(false);
+  const [resumeText, setResumeText] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const supabaseState = getSupabaseIntegrationState();
 
   useEffect(() => {
     setSavedAnalyses(getSavedAnalyses());
   }, []);
+
+  useEffect(() => {
+    if (!resumeText.trim()) {
+      return;
+    }
+
+    if (!email) {
+      const extractedEmail = extractEmail(resumeText);
+      if (extractedEmail) {
+        setEmail(extractedEmail);
+      }
+    }
+
+    if (!name) {
+      const inferredName = extractNameFromResume(resumeText, extractEmail(resumeText));
+      if (inferredName) {
+        setName(inferredName);
+      }
+    }
+  }, [resumeText, name, email]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,8 +235,11 @@ export function JobCopilot() {
           },
           body: JSON.stringify({
             name,
+            email,
             targetRole,
             companyName,
+            companyWebsite,
+            enableCompanyResearch,
             resumeText,
             jobDescription
           })
@@ -184,7 +255,9 @@ export function JobCopilot() {
       } catch (submitError) {
         setResult(null);
         setError(
-          submitError instanceof Error ? submitError.message : "Something went wrong during analysis."
+          submitError instanceof Error
+            ? submitError.message
+            : "Something went wrong during analysis."
         );
       }
     });
@@ -192,10 +265,67 @@ export function JobCopilot() {
 
   function loadDemo() {
     setName("Kabir");
+    setEmail("kabir@example.com");
     setTargetRole("AI Engineer");
     setCompanyName("OpenAI");
+    setCompanyWebsite("https://openai.com");
+    setEnableCompanyResearch(true);
     setResumeText(demoResume);
     setJobDescription(demoJob);
+  }
+
+  async function handleCopyCoverLetter() {
+    if (!result?.coverLetterSnippet) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(result.coverLetterSnippet);
+      setCopyMessage("Cover letter copied.");
+    } catch {
+      setCopyMessage("Could not copy automatically. You can still select and copy the text.");
+    }
+  }
+
+  function handleDownloadCoverLetter() {
+    if (!result?.coverLetterSnippet || typeof window === "undefined") {
+      return;
+    }
+
+    const printable = window.open("", "_blank", "noopener,noreferrer,width=900,height=1200");
+    if (!printable) {
+      setCopyMessage("Pop-up blocked. Please allow pop-ups to download the cover letter as PDF.");
+      return;
+    }
+
+    const header = [name, email].filter(Boolean).join("<br />");
+    const body = result.coverLetterSnippet
+      .split(/\n\s*\n/)
+      .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br />")}</p>`)
+      .join("");
+
+    printable.document.write(`<!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <title>Cover Letter</title>
+          <style>
+            body { font-family: Georgia, serif; color: #24170d; margin: 48px; line-height: 1.7; }
+            .meta { margin-bottom: 28px; font-size: 15px; }
+            h1 { margin: 0 0 24px; font-size: 28px; }
+            p { margin: 0 0 16px; font-size: 16px; }
+            @media print { body { margin: 32px; } }
+          </style>
+        </head>
+        <body>
+          <h1>Cover Letter</h1>
+          ${header ? `<div class="meta">${header}</div>` : ""}
+          ${body}
+        </body>
+      </html>`);
+    printable.document.close();
+    printable.focus();
+    printable.print();
   }
 
   async function handleSaveAnalysis() {
@@ -206,6 +336,7 @@ export function JobCopilot() {
     const entry = saveAnalysis(
       {
         name,
+        email,
         targetRole,
         companyName,
         resumeText,
@@ -218,7 +349,9 @@ export function JobCopilot() {
 
     const syncResult = await syncSavedAnalysisToSupabase(entry);
     setSaveMessage(
-      `${syncResult.message} Saved analysis from ${new Date(entry.createdAt).toLocaleString()}.`
+      syncResult.status === "local"
+        ? `Saved locally on ${new Date(entry.createdAt).toLocaleString()}.`
+        : `${syncResult.message} Saved analysis from ${new Date(entry.createdAt).toLocaleString()}.`
     );
   }
 
@@ -229,6 +362,9 @@ export function JobCopilot() {
     }
 
     setUploadMessage("Uploading resume...");
+    setResult(null);
+    setSaveMessage(null);
+    setCopyMessage(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -247,6 +383,11 @@ export function JobCopilot() {
 
       if (payload.text) {
         setResumeText(payload.text);
+        const extractedEmail = extractEmail(payload.text);
+        const inferredName = extractNameFromResume(payload.text, extractedEmail);
+
+        setEmail(extractedEmail);
+        setName(inferredName);
       }
 
       setUploadMessage(
@@ -264,19 +405,53 @@ export function JobCopilot() {
       <section className="panel" style={panelStyle}>
         <h2 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Run a career fit analysis</h2>
         <p style={helperStyle}>
-          This full project path includes resume ingestion, ATS scoring, project recommendations,
-          interview prep, outreach drafting, and persistence-ready architecture. Right now the app
-          already supports the core flow with upload scaffolding and low-cost analysis fallback.
+          Upload your resume, map it against a role, and let the system draft a sharper job
+          strategy with personalized project ideas and application materials.
         </p>
 
         <form className="form-grid" onSubmit={handleSubmit} style={formStyle}>
           <div className="field" style={fieldStyle}>
+            <label htmlFor="resumeFile">Resume file upload</label>
+            <input
+              id="resumeFile"
+              type="file"
+              accept=".txt,.pdf"
+              onChange={handleResumeUpload}
+              style={{ ...inputStyle, padding: "12px 14px" }}
+            />
+            <p className="helper" style={helperStyle}>
+              Upload your resume first. The app will extract text and try to auto-fill your name
+              and email before analysis.
+            </p>
+            {uploadMessage ? (
+              <p className="helper" style={helperStyle}>
+                {uploadMessage}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="field" style={fieldStyle}>
             <label htmlFor="name">Name</label>
             <input
               id="name"
-              placeholder="Your name"
+              placeholder="Auto-filled from resume when possible"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              style={inputStyle}
+            />
+            <p className="helper" style={helperStyle}>
+              This is optional. The app tries to extract your name from the uploaded or pasted
+              resume text and only needs manual correction if the guess is wrong.
+            </p>
+          </div>
+
+          <div className="field" style={fieldStyle}>
+            <label htmlFor="email">Email address</label>
+            <input
+              id="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               style={inputStyle}
             />
           </div>
@@ -304,23 +479,29 @@ export function JobCopilot() {
           </div>
 
           <div className="field" style={fieldStyle}>
-            <label htmlFor="resumeFile">Resume file upload</label>
+            <label htmlFor="companyWebsite">Company website or job link</label>
             <input
-              id="resumeFile"
-              type="file"
-              accept=".txt,.pdf"
-              onChange={handleResumeUpload}
-              style={{ ...inputStyle, padding: "12px 14px" }}
+              id="companyWebsite"
+              placeholder="https://www.trivago.com or the job URL"
+              value={companyWebsite}
+              onChange={(event) => setCompanyWebsite(event.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div className="field" style={fieldStyle}>
+            <label htmlFor="companyResearch">Company research mode</label>
+            <input
+              id="companyResearch"
+              type="checkbox"
+              checked={enableCompanyResearch}
+              onChange={(event) => setEnableCompanyResearch(event.target.checked)}
+              style={{ width: "20px", height: "20px" }}
             />
             <p className="helper" style={helperStyle}>
-              `.txt` and `.pdf` resumes can be uploaded here. Extracted text is loaded into the
-              resume field so you can review or edit it before analysis.
+              Turn this on only when you want company-context drafting. It is slower because the app
+              tries to fetch public company pages first.
             </p>
-            {uploadMessage ? (
-              <p className="helper" style={helperStyle}>
-                {uploadMessage}
-              </p>
-            ) : null}
           </div>
 
           <div className="field" style={fieldStyle}>
@@ -345,14 +526,6 @@ export function JobCopilot() {
             />
           </div>
 
-          <p className="helper" style={helperStyle}>
-            This form is designed to expand into PDF extraction, authentication, saved sessions,
-            embeddings, and real LLM inference without changing the core UX.
-          </p>
-          <p className="helper" style={helperStyle}>
-            {supabaseState.statusMessage}
-          </p>
-
           <div className="actions" style={actionsStyle}>
             <button
               className="button button-primary"
@@ -368,7 +541,7 @@ export function JobCopilot() {
               type="button"
               style={secondaryButtonStyle}
             >
-              Load demo data
+              Try demo data
             </button>
           </div>
         </form>
@@ -381,6 +554,11 @@ export function JobCopilot() {
         {saveMessage ? (
           <p className="helper" style={helperStyle}>
             {saveMessage}
+          </p>
+        ) : null}
+        {copyMessage ? (
+          <p className="helper" style={helperStyle}>
+            {copyMessage}
           </p>
         ) : null}
       </section>
@@ -397,15 +575,16 @@ export function JobCopilot() {
               <p style={helperStyle}>
                 ATS alignment: <strong>{result.atsScore}%</strong>
               </p>
-              <p style={helperStyle}>
-                Provider: <strong>{result.provider ?? "unknown"}</strong>
-                {result.model ? ` (${result.model})` : ""}
-              </p>
             </article>
 
             <article className="result-card panel" style={panelStyle}>
               <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Skill coverage</h3>
               <p style={helperStyle}>Matched skills extracted from the target role and your resume.</p>
+              <p style={helperStyle}>
+                Role family: <strong>{result.roleFamily ?? "Unknown"}</strong>
+                {" · "}
+                Seniority: <strong>{result.seniority ?? "Unknown"}</strong>
+              </p>
               <div className="chips" style={chipsStyle}>
                 {result.matchedSkills.length ? (
                   result.matchedSkills.map((skill) => (
@@ -426,6 +605,37 @@ export function JobCopilot() {
                   </span>
                 ))}
               </div>
+              {result.domainFocus?.length ? (
+                <div className="chips" style={chipsStyle}>
+                  {result.domainFocus.map((theme) => (
+                    <span className="chip" key={theme} style={highlightedChipStyle}>
+                      {theme}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+
+            <article className="result-card panel" style={panelStyle}>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Relevant experience</h3>
+              {result.relevantExperience.length ? (
+                <ul className="list">
+                  {result.relevantExperience.map((project) => (
+                    <li key={project}>{project}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={helperStyle}>No strong existing experience signals were extracted yet.</p>
+              )}
+            </article>
+
+            <article className="result-card panel" style={panelStyle}>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>New projects to build</h3>
+              <ul className="list">
+                {result.newProjectIdeas.map((project) => (
+                  <li key={project}>{project}</li>
+                ))}
+              </ul>
             </article>
 
             <article className="result-card panel" style={panelStyle}>
@@ -435,6 +645,38 @@ export function JobCopilot() {
                   <li key={project}>{project}</li>
                 ))}
               </ul>
+            </article>
+
+            <article className="result-card panel" style={panelStyle}>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Must-have vs nice-to-have</h3>
+              <p style={helperStyle}>Must-have skills</p>
+              <div className="chips" style={chipsStyle}>
+                {(result.mustHaveSkills ?? []).map((skill) => (
+                  <span className="chip" key={skill} style={chipStyle}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+              <p style={{ ...helperStyle, marginTop: "16px" }}>Nice-to-have skills</p>
+              <div className="chips" style={chipsStyle}>
+                {(result.niceToHaveSkills ?? []).map((skill) => (
+                  <span className="chip" key={skill} style={highlightedChipStyle}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+              {(result.languageRequirements ?? []).length ? (
+                <>
+                  <p style={{ ...helperStyle, marginTop: "16px" }}>Language requirements</p>
+                  <div className="chips" style={chipsStyle}>
+                    {(result.languageRequirements ?? []).map((language) => (
+                      <span className="chip" key={language} style={highlightedChipStyle}>
+                        {language}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : null}
             </article>
 
             <article className="result-card panel" style={panelStyle}>
@@ -465,11 +707,30 @@ export function JobCopilot() {
             </article>
 
             <article className="result-card panel" style={panelStyle}>
-              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Application drafts</h3>
-              <p style={helperStyle}>{result.coverLetterSnippet}</p>
-              <p style={helperStyle}>{result.coldEmailSnippet}</p>
-              <p style={helperStyle}>{result.portfolioPitch}</p>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Cover letter</h3>
+              {(name || email) ? (
+                <p style={{ ...helperStyle, whiteSpace: "pre-line" }}>
+                  {[name, email].filter(Boolean).join("\n")}
+                </p>
+              ) : null}
+              <p style={{ ...helperStyle, whiteSpace: "pre-line" }}>{result.coverLetterSnippet}</p>
               <div className="actions" style={actionsStyle}>
+                <button
+                  className="button button-secondary"
+                  onClick={handleDownloadCoverLetter}
+                  type="button"
+                  style={secondaryButtonStyle}
+                >
+                  Download cover letter
+                </button>
+                <button
+                  className="button button-secondary"
+                  onClick={handleCopyCoverLetter}
+                  type="button"
+                  style={secondaryButtonStyle}
+                >
+                  Copy cover letter
+                </button>
                 <button
                   className="button button-secondary"
                   onClick={handleSaveAnalysis}
@@ -482,11 +743,62 @@ export function JobCopilot() {
             </article>
 
             <article className="result-card panel" style={panelStyle}>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Outreach and pitch</h3>
+              <p style={helperStyle}>{result.coldEmailSnippet}</p>
+              <p style={helperStyle}>{result.portfolioPitch}</p>
+            </article>
+
+            {result.companyResearch ? (
+              <article className="result-card panel" style={panelStyle}>
+                <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Company research</h3>
+                <p style={helperStyle}>
+                  Status: <strong>{result.companyResearch.status}</strong>
+                </p>
+                {result.companyResearch.companySummary ? (
+                  <p style={helperStyle}>{result.companyResearch.companySummary}</p>
+                ) : null}
+                {result.companyResearch.status === "failed" ? (
+                  <p style={{ ...helperStyle, marginTop: "12px" }}>
+                    Try a direct company website instead of a job-board or LinkedIn link if you want
+                    stronger research results.
+                  </p>
+                ) : null}
+                {result.companyResearch.roleSummary ? (
+                  <>
+                    <p style={{ ...helperStyle, marginTop: "12px" }}>Role focus</p>
+                    <p style={helperStyle}>{result.companyResearch.roleSummary}</p>
+                  </>
+                ) : null}
+                {result.companyResearch.latestAchievements.length ? (
+                  <>
+                    <p style={{ ...helperStyle, marginTop: "12px" }}>Latest achievements</p>
+                    <ul className="list">
+                      {result.companyResearch.latestAchievements.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+                {result.companyResearch.sourceUrls.length ? (
+                  <>
+                    <p style={{ ...helperStyle, marginTop: "12px" }}>Sources</p>
+                    <ul className="list">
+                      {result.companyResearch.sourceUrls.map((item) => (
+                        <li key={item}>
+                          <a href={item} target="_blank" rel="noreferrer" style={{ color: "#0a5347" }}>
+                            {item}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+              </article>
+            ) : null}
+
+            <article className="result-card panel" style={panelStyle}>
               <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Saved sessions</h3>
-              <p style={helperStyle}>
-                Local history works now. If Supabase is configured, each save also attempts a remote
-                insert into `{supabaseState.table}`.
-              </p>
+              <p style={helperStyle}>{supabaseState.statusMessage}</p>
               {savedAnalyses.length ? (
                 <ul className="list">
                   {savedAnalyses.slice(0, 5).map((entry) => (

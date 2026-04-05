@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SavedAnalysis, SupabaseEnvConfig } from "@/lib/types";
 
 export type SupabaseIntegrationState = {
@@ -50,7 +50,7 @@ export function getSupabaseIntegrationState(): SupabaseIntegrationState {
       enabled: false,
       remoteReady: false,
       table,
-      statusMessage: `Supabase is in local-only mode. Missing env vars: ${config.missing.join(", ")}.`
+      statusMessage: "Supabase sync is optional here, so analyses are currently being kept in local browser storage."
     };
   }
 
@@ -90,16 +90,18 @@ export function createSupabaseClientState(): SupabaseClientState {
   return {
     enabled: config.enabled,
     config,
-    client: createBrowserSupabaseClient()
+    client: null
   };
 }
 
-export function createBrowserSupabaseClient(): SupabaseClient | null {
+export async function createBrowserSupabaseClient(): Promise<SupabaseClient | null> {
   const config = getSupabaseConfig();
 
   if (!config.enabled) {
     return null;
   }
+
+  const { createClient } = await import("@supabase/supabase-js");
 
   return createClient(config.url, config.anonKey, {
     auth: {
@@ -133,7 +135,7 @@ export async function syncSavedAnalysisToSupabase(
     };
   }
 
-  const client = createBrowserSupabaseClient();
+  const client = await createBrowserSupabaseClient();
 
   try {
     if (client) {

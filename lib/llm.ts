@@ -31,6 +31,7 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_MODEL = "gpt-5.4-mini";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const DEFAULT_OLLAMA_MODEL = "llama3.2:1b";
+const MODEL_TIMEOUT_MS = 12000;
 
 export function getLLMEnv(): LLMEnv {
   return {
@@ -114,6 +115,7 @@ async function callOpenAI(
       Authorization: `Bearer ${env.apiKey}`,
       "Content-Type": "application/json"
     },
+    signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
     body: JSON.stringify({
       model: env.model,
       input: [
@@ -147,21 +149,28 @@ async function callOllama(
   prompt: CopilotPromptBundle,
   env: LLMEnv
 ): Promise<CopilotEnhancementOutput | null> {
-  const response = await fetch(`${env.ollamaBaseUrl.replace(/\/$/, "")}/api/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: env.ollamaModel,
-      stream: false,
-      format: "json",
-      messages: [
-        { role: "system", content: prompt.system },
-        { role: "user", content: prompt.user }
-      ]
-    })
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${env.ollamaBaseUrl.replace(/\/$/, "")}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+      body: JSON.stringify({
+        model: env.ollamaModel,
+        stream: false,
+        format: "json",
+        messages: [
+          { role: "system", content: prompt.system },
+          { role: "user", content: prompt.user }
+        ]
+      })
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) {
     return null;

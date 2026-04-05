@@ -1,9 +1,21 @@
 export type AnalysisInput = {
   name?: string;
+  email?: string;
   targetRole?: string;
   resumeText: string;
   jobDescription: string;
   companyName?: string;
+  companyWebsite?: string;
+  enableCompanyResearch?: boolean;
+};
+
+export type CompanyResearch = {
+  status: "not_requested" | "researched" | "partial" | "failed";
+  companySummary: string;
+  roleSummary: string;
+  latestAchievements: string[];
+  hiringSignals: string[];
+  sourceUrls: string[];
 };
 
 export type AnalysisResult = {
@@ -11,7 +23,10 @@ export type AnalysisResult = {
   summary: string;
   matchedSkills: string[];
   missingSkills: string[];
+  languageRequirements?: string[];
   suggestedProjects: string[];
+  relevantExperience: string[];
+  newProjectIdeas: string[];
   interviewQuestions: string[];
   nextSteps: string[];
   atsScore: number;
@@ -19,6 +34,12 @@ export type AnalysisResult = {
   coverLetterSnippet: string;
   coldEmailSnippet: string;
   portfolioPitch: string;
+  seniority?: string;
+  roleFamily?: string;
+  domainFocus?: string[];
+  mustHaveSkills?: string[];
+  niceToHaveSkills?: string[];
+  companyResearch?: CompanyResearch;
   provider?: "ollama" | "openai" | "mock";
   model?: string;
 };
