@@ -18,12 +18,26 @@ export type CompanyResearch = {
   sourceUrls: string[];
 };
 
+export type AgentStep = {
+  id: string;
+  title: string;
+  status: "completed" | "fallback" | "skipped";
+  summary: string;
+};
+
+export type AgentSystemTrace = {
+  mode: "multi-agent";
+  agents: string[];
+  completedSteps: AgentStep[];
+};
+
 export type AnalysisResult = {
   score: number;
   summary: string;
   matchedSkills: string[];
   missingSkills: string[];
   languageRequirements?: string[];
+  rewrittenResumeBullets?: string[];
   suggestedProjects: string[];
   relevantExperience: string[];
   newProjectIdeas: string[];
@@ -40,6 +54,7 @@ export type AnalysisResult = {
   mustHaveSkills?: string[];
   niceToHaveSkills?: string[];
   companyResearch?: CompanyResearch;
+  agentSystem?: AgentSystemTrace;
   provider?: "ollama" | "openai" | "mock";
   model?: string;
 };

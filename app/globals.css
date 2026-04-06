@@ -1,16 +1,16 @@
 :root {
-  --bg: #f6f1e8;
-  --bg-strong: #efe6d7;
-  --surface: rgba(255, 251, 245, 0.8);
-  --surface-strong: #fffaf2;
-  --border: rgba(108, 74, 32, 0.18);
-  --text: #24170d;
-  --muted: #6b5644;
-  --accent: #0e6b5c;
-  --accent-soft: #d8f1e8;
-  --accent-strong: #0a5347;
-  --warning: #8b5e1a;
-  --shadow: 0 20px 60px rgba(62, 40, 18, 0.12);
+  --bg: #0b1020;
+  --bg-strong: #151b2f;
+  --surface: rgba(17, 24, 39, 0.9);
+  --surface-strong: rgba(29, 37, 52, 0.92);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f4efe6;
+  --muted: rgba(230, 224, 213, 0.78);
+  --accent: #ddc38b;
+  --accent-soft: rgba(221, 195, 139, 0.16);
+  --accent-strong: #f1d39d;
+  --warning: #f0bc76;
+  --shadow: 0 28px 80px rgba(3, 8, 20, 0.34);
 }
 
 * {
@@ -26,10 +26,10 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 28%),
-    radial-gradient(circle at top right, rgba(14, 107, 92, 0.12), transparent 24%),
-    linear-gradient(160deg, #f9f5ed 0%, #f3e9d9 52%, #efe1cf 100%);
-  font-family: Georgia, "Times New Roman", serif;
+    radial-gradient(circle at top left, rgba(221, 195, 139, 0.18), transparent 26%),
+    radial-gradient(circle at 80% 10%, rgba(71, 110, 168, 0.22), transparent 22%),
+    linear-gradient(155deg, #07101f 0%, #11182a 48%, #1a2238 100%);
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 }
 
 a {
@@ -63,7 +63,7 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 28px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(18px);
 }
 
 .hero-copy {
@@ -106,8 +106,8 @@ textarea {
 .stat {
   padding: 18px;
   border-radius: 22px;
-  background: var(--surface-strong);
-  border: 1px solid rgba(108, 74, 32, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .stat strong {
@@ -163,8 +163,8 @@ textarea {
   width: 100%;
   padding: 16px 18px;
   border-radius: 20px;
-  border: 1px solid rgba(108, 74, 32, 0.18);
-  background: rgba(255, 252, 247, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   resize: vertical;
   min-height: 56px;
@@ -203,11 +203,11 @@ textarea {
 
 .button-primary {
   background: var(--accent);
-  color: white;
+  color: #1b2233;
 }
 
 .button-secondary {
-  background: rgba(36, 23, 13, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
@@ -228,7 +228,9 @@ textarea {
   justify-items: start;
   padding: 20px;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(14, 107, 92, 0.1), rgba(255, 255, 255, 0.45));
+  background:
+    radial-gradient(circle at top left, rgba(221, 195, 139, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(29, 37, 52, 0.92));
 }
 
 .score-ring strong {
@@ -246,8 +248,9 @@ textarea {
   display: inline-flex;
   padding: 9px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(108, 74, 32, 0.16);
-  background: rgba(255, 251, 245, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
   font-size: 0.94rem;
 }
 

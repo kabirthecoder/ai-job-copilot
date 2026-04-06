@@ -16,11 +16,12 @@ const heroStyle: CSSProperties = {
 };
 
 const cardStyle: CSSProperties = {
-  background: "rgba(255, 251, 245, 0.8)",
-  border: "1px solid rgba(108, 74, 32, 0.18)",
-  borderRadius: "28px",
-  boxShadow: "0 20px 60px rgba(62, 40, 18, 0.12)",
-  backdropFilter: "blur(12px)"
+  background: "linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(29, 37, 52, 0.9))",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  borderRadius: "32px",
+  boxShadow: "0 24px 80px rgba(4, 10, 24, 0.34)",
+  backdropFilter: "blur(18px)",
+  color: "#f4efe6"
 };
 
 const copyStyle: CSSProperties = {
@@ -40,8 +41,8 @@ const eyebrowStyle: CSSProperties = {
   display: "inline-flex",
   padding: "8px 14px",
   borderRadius: "999px",
-  background: "#d8f1e8",
-  color: "#0a5347",
+  background: "rgba(221, 195, 139, 0.16)",
+  color: "#f1d39d",
   fontSize: "0.85rem",
   letterSpacing: "0.08em",
   textTransform: "uppercase"
@@ -57,7 +58,7 @@ const titleStyle: CSSProperties = {
 const leadStyle: CSSProperties = {
   margin: 0,
   maxWidth: "42rem",
-  color: "#6b5644",
+  color: "rgba(230, 224, 213, 0.78)",
   fontSize: "1.08rem",
   lineHeight: 1.6
 };
@@ -65,26 +66,26 @@ const leadStyle: CSSProperties = {
 const statStyle: CSSProperties = {
   padding: "18px",
   borderRadius: "22px",
-  background: "#fffaf2",
-  border: "1px solid rgba(108, 74, 32, 0.12)"
+  background: "linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02))",
+  border: "1px solid rgba(255, 255, 255, 0.08)"
 };
 
 const stats = [
   {
-    value: "Low Cost",
-    label: "Start with rules + selective model calls so the product stays affordable."
+    value: "Agentic",
+    label: "Resume, job, research, gap, rewrite, drafting, and review agents collaborate in one workflow."
   },
   {
-    value: "Job Ready",
-    label: "Showcase full-stack, AI UX, prompt design, and evaluation thinking in one app."
+    value: "Grounded",
+    label: "Typed orchestration and review fallbacks keep outputs more stable than a one-shot prompt."
   },
   {
-    value: "Portfolio Strong",
-    label: "The product solves a real candidate pain point instead of being another generic chatbot."
+    value: "Practical",
+    label: "The product tackles real job-search pain with research, analysis, rewriting, and application drafting."
   },
   {
-    value: "End-to-End",
-    label: "Resume upload, ATS scoring, outreach drafts, storage hooks, and LLM-ready architecture."
+    value: "Extensible",
+    label: "Designed to grow into approvals, memory, tool use, and deeper retrieval over time."
   }
 ];
 
@@ -94,13 +95,13 @@ export default function HomePage() {
       <section className="hero" style={heroStyle}>
         <div className="hero-card hero-copy" style={copyStyle}>
           <span className="eyebrow" style={eyebrowStyle}>
-            AI Research + Job Copilot
+            RoleForge
           </span>
-          <h1 style={titleStyle}>Turn your resume into a sharper job strategy.</h1>
+          <h1 style={titleStyle}>Forge a stronger application with an agentic career system.</h1>
           <p style={leadStyle}>
-            Analyze resume-job fit, highlight missing skills, draft outreach, shape personal
-            projects, and prepare interviews in one place. The app is built to grow from cheap
-            heuristics into a production-style AI workflow.
+            RoleForge uses specialized agents to read resumes, interpret job descriptions, research
+            companies, identify real gaps, rewrite weak bullets, and draft application materials that
+            are more grounded than a one-shot chatbot response.
           </p>
         </div>
 
@@ -110,7 +111,7 @@ export default function HomePage() {
               <strong style={{ display: "block", fontSize: "2rem", marginBottom: "8px" }}>
                 {stat.value}
               </strong>
-              <span style={{ color: "#6b5644", lineHeight: 1.5 }}>{stat.label}</span>
+              <span style={{ color: "rgba(230, 224, 213, 0.78)", lineHeight: 1.5 }}>{stat.label}</span>
             </div>
           ))}
         </div>

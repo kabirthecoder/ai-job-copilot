@@ -8,17 +8,18 @@ import type { AnalysisResult, SavedAnalysis, UploadResumeResponse } from "@/lib/
 
 const workspaceStyle: CSSProperties = {
   display: "grid",
-  gap: "22px",
+  gap: "26px",
   gridTemplateColumns: "1fr 1fr"
 };
 
 const panelStyle: CSSProperties = {
-  background: "rgba(255, 251, 245, 0.8)",
-  border: "1px solid rgba(108, 74, 32, 0.18)",
-  borderRadius: "28px",
-  boxShadow: "0 20px 60px rgba(62, 40, 18, 0.12)",
-  backdropFilter: "blur(12px)",
-  padding: "24px"
+  background: "linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(29, 37, 52, 0.9))",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  borderRadius: "32px",
+  boxShadow: "0 24px 80px rgba(4, 10, 24, 0.34)",
+  backdropFilter: "blur(18px)",
+  padding: "26px",
+  color: "#f4efe6"
 };
 
 const formStyle: CSSProperties = {
@@ -35,9 +36,9 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "16px 18px",
   borderRadius: "20px",
-  border: "1px solid rgba(108, 74, 32, 0.18)",
-  background: "rgba(255, 252, 247, 0.95)",
-  color: "#24170d",
+  border: "1px solid rgba(255, 255, 255, 0.1)",
+  background: "rgba(255, 255, 255, 0.05)",
+  color: "#f4efe6",
   minHeight: "56px",
   font: "inherit"
 };
@@ -50,7 +51,7 @@ const textareaStyle: CSSProperties = {
 
 const helperStyle: CSSProperties = {
   margin: 0,
-  color: "#6b5644",
+  color: "rgba(230, 224, 213, 0.78)",
   lineHeight: 1.6,
   fontSize: "0.92rem"
 };
@@ -66,16 +67,18 @@ const primaryButtonStyle: CSSProperties = {
   border: 0,
   borderRadius: "999px",
   padding: "14px 22px",
-  background: "#0e6b5c",
-  color: "#fff",
+  background: "linear-gradient(135deg, #ddc38b, #f2dfb7)",
+  color: "#1e2433",
   cursor: "pointer",
-  font: "inherit"
+  font: "inherit",
+  fontWeight: 700
 };
 
 const secondaryButtonStyle: CSSProperties = {
   ...primaryButtonStyle,
-  background: "rgba(36, 23, 13, 0.08)",
-  color: "#24170d"
+  background: "rgba(255, 255, 255, 0.08)",
+  color: "#f4efe6",
+  fontWeight: 500
 };
 
 const resultsStyle: CSSProperties = {
@@ -88,15 +91,15 @@ const scoreStyle: CSSProperties = {
   display: "grid",
   gap: "10px",
   justifyItems: "start",
-  background: "linear-gradient(180deg, rgba(14, 107, 92, 0.1), rgba(255, 255, 255, 0.45))"
+  background: "radial-gradient(circle at top left, rgba(221, 195, 139, 0.18), transparent 38%), linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(29, 37, 52, 0.92))"
 };
 
 const eyebrowStyle: CSSProperties = {
   display: "inline-flex",
   padding: "8px 14px",
   borderRadius: "999px",
-  background: "#d8f1e8",
-  color: "#0a5347",
+  background: "rgba(221, 195, 139, 0.16)",
+  color: "#f1d39d",
   fontSize: "0.85rem",
   letterSpacing: "0.08em",
   textTransform: "uppercase"
@@ -113,23 +116,24 @@ const chipStyle: CSSProperties = {
   display: "inline-flex",
   padding: "9px 12px",
   borderRadius: "999px",
-  border: "1px solid rgba(108, 74, 32, 0.16)",
-  background: "rgba(255, 251, 245, 0.85)",
+  border: "1px solid rgba(255, 255, 255, 0.1)",
+  background: "rgba(255, 255, 255, 0.06)",
+  color: "#efe6d7",
   fontSize: "0.94rem"
 };
 
 const highlightedChipStyle: CSSProperties = {
   ...chipStyle,
-  background: "#d8f1e8",
-  color: "#0a5347"
+  background: "rgba(221, 195, 139, 0.14)",
+  color: "#f1d39d"
 };
 
 const emptyStateStyle: CSSProperties = {
   padding: "28px",
-  border: "1px dashed rgba(108, 74, 32, 0.24)",
+  border: "1px dashed rgba(255, 255, 255, 0.14)",
   borderRadius: "24px",
-  color: "#6b5644",
-  background: "rgba(255, 251, 245, 0.45)"
+  color: "rgba(230, 224, 213, 0.78)",
+  background: "rgba(255, 255, 255, 0.04)"
 };
 
 const demoResume = `Built data-driven web apps with React, Next.js, Node.js, Python, SQL, Git, and machine learning coursework. Created REST APIs, dashboards, and automation tools. Interested in LLM applications and AI product engineering.`;
@@ -405,8 +409,8 @@ export function JobCopilot() {
       <section className="panel" style={panelStyle}>
         <h2 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Run a career fit analysis</h2>
         <p style={helperStyle}>
-          Upload your resume, map it against a role, and let the system draft a sharper job
-          strategy with personalized project ideas and application materials.
+          Upload your resume, map it against a role, and let RoleForge's agent system coordinate
+          parsing, research, rewriting, gap analysis, and drafting in one flow.
         </p>
 
         <form className="form-grid" onSubmit={handleSubmit} style={formStyle}>
@@ -577,6 +581,22 @@ export function JobCopilot() {
               </p>
             </article>
 
+            {result.agentSystem ? (
+              <article className="result-card panel" style={panelStyle}>
+                <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Agent workflow</h3>
+                <p style={helperStyle}>
+                  {result.agentSystem.agents.length} specialist agents collaborated on this run.
+                </p>
+                <ul className="list">
+                  {result.agentSystem.completedSteps.map((step) => (
+                    <li key={step.id}>
+                      <strong>{step.title}</strong>: {step.summary}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ) : null}
+
             <article className="result-card panel" style={panelStyle}>
               <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Skill coverage</h3>
               <p style={helperStyle}>Matched skills extracted from the target role and your resume.</p>
@@ -627,6 +647,18 @@ export function JobCopilot() {
               ) : (
                 <p style={helperStyle}>No strong existing experience signals were extracted yet.</p>
               )}
+            </article>
+
+            <article className="result-card panel" style={panelStyle}>
+              <h3 style={{ margin: "0 0 10px", fontSize: "1.5rem" }}>Resume rewrite</h3>
+              <p style={helperStyle}>
+                Rewritten bullets from the Resume Rewrite Agent, shaped to sound stronger for this role.
+              </p>
+              <ul className="list">
+                {(result.rewrittenResumeBullets ?? []).map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
             </article>
 
             <article className="result-card panel" style={panelStyle}>
