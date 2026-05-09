@@ -4,10 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit",
-    "agents:check": "node scripts/check-agents.mjs"
+    "agents:check": "node scripts/check-agents.mjs",
+    "start": "node --experimental-specifier-resolution=node server.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
+    "@types/node": "^24.6.0",
     "typescript": "^5.8.3"
   }
 }

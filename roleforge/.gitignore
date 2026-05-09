@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.local
+data/runs
+data/packets
+data/vector-store
+npm-debug.log
