@@ -36,6 +36,12 @@ const agents = [
     fallback: true
   },
   {
+    name: "cover-letter-humanizer-agent",
+    purpose: "Rewrite the cover letter to sound more human and less templated",
+    llm: true,
+    fallback: true
+  },
+  {
     name: "review-agent",
     purpose: "Review the cover letter for generic or weak output",
     llm: true,
@@ -63,7 +69,7 @@ function resolveAgentEnv(agentName) {
         ? "mock"
         : process.env[`${prefix}_MODEL`]?.trim() ||
           process.env.ROLEFORGE_OLLAMA_MODEL?.trim() ||
-          "llama3.2:3b";
+          "qwen2.5:3b";
 
   const baseUrl =
     provider === "openai"
