@@ -42,7 +42,8 @@ export async function runRewriteAgent(
   gap: GapAgentOutput
 ): Promise<AgentResult<RewriteAgentOutput>> {
   const role = context.target.targetRole ?? "target role";
-  const bullets = resume.evidenceLines.slice(0, 3).map((line, index) => {
+  const sourceEvidence = resume.evidenceLines.slice(0, 3);
+  const bullets = sourceEvidence.map((line, index) => {
     const cleaned = cleanEvidenceLine(line);
     if (index === 0) {
       return `${sentenceCase(cleaned)} while building evidence that maps well to ${role.toLowerCase()} responsibilities.`;
@@ -50,6 +51,12 @@ export async function runRewriteAgent(
 
     return `${sentenceCase(cleaned)} with clearer emphasis on ${gap.focusAreas[0] ?? "higher-impact role requirements"} and measurable delivery.`;
   });
+  const safeBullets = bullets.length
+    ? bullets
+    : [
+        `Built practical AI and analytics work with clear overlap to ${role.toLowerCase()} expectations.`,
+        `Delivered hands-on technical work with stronger emphasis on ${gap.focusAreas[0] ?? "role-relevant execution"}.`
+      ];
   const prompt = buildRewriteAgentPrompt(context, resume, gap);
   const response = await invokeRoleForgeAgent<RewriteAgentOutput>(
     "rewrite-agent",
@@ -64,12 +71,12 @@ export async function runRewriteAgent(
     "## Professional Summary",
     fallbackSummary,
     "",
-    `## ATS Target`,
-    `Current ATS score: ${gap.atsScore}/100`,
-    `Projected ATS after these changes: ${Math.min(projectedAtsScore, 97)}/100`,
+    `## Fit improvement`,
+    `Current fit score: ${gap.atsScore}/100`,
+    `Expected score after these changes: ${Math.min(projectedAtsScore, 97)}/100`,
     "",
     "## Tailored Experience Bullets",
-    ...bullets.map((bullet) => `- ${bullet}`),
+    ...safeBullets.map((bullet) => `- ${bullet}`),
     "",
     "## Priority Fixes To Reach 90%+",
     ...gap.highPriorityFixes.map((fix) => `- ${fix}`)
@@ -103,7 +110,7 @@ export async function runRewriteAgent(
                 : fallbackArtifact
           }
         : {
-            rewrittenBullets: bullets,
+            rewrittenBullets: safeBullets,
             revisedSummary: fallbackSummary,
             projectedAtsScore: Math.min(projectedAtsScore, 97),
             revisedResumeArtifact: fallbackArtifact

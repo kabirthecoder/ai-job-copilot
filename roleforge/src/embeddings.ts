@@ -48,7 +48,16 @@ export function cosineSimilarity(left: number[], right: number[]) {
 }
 
 function getEmbeddingProvider(): EmbeddingProvider {
-  return (process.env.ROLEFORGE_EMBEDDING_PROVIDER?.trim() as EmbeddingProvider | undefined) || "local";
+  const explicit = process.env.ROLEFORGE_EMBEDDING_PROVIDER?.trim() as EmbeddingProvider | undefined;
+  if (explicit) {
+    return explicit;
+  }
+
+  if (process.env.OPENAI_API_KEY?.trim()) {
+    return "openai";
+  }
+
+  return "ollama";
 }
 
 async function embedWithOllama(texts: string[]) {

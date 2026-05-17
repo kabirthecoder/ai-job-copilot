@@ -1,69 +1,133 @@
-import { invokeRoleForgeAgent } from "../llm.js";
-import { buildJobAgentPrompt } from "../prompts.js";
 import type { AgentContext, AgentResult, JobAgentOutput } from "../types.js";
+
+function unique(items: string[]) {
+  return [...new Set(items.filter(Boolean))];
+}
 
 function detectLanguageRequirements(text: string) {
   const hits: string[] = [];
   if (/\b(deutsch|german)\b/i.test(text)) hits.push("German");
   if (/\b(englisch|english)\b/i.test(text)) hits.push("English");
-  return [...new Set(hits)];
+  if (/\b(french|französisch)\b/i.test(text)) hits.push("French");
+  return unique(hits);
 }
 
-function normalizeStringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+function detectRoleFamily(text: string) {
+  if (/\b(data scientist|applied scientist|research scientist)\b/i.test(text)) {
+    return "Data / Applied Science";
+  }
+
+  if (/\b(ai engineer|ml engineer|machine learning engineer|software engineer)\b/i.test(text)) {
+    return "AI / ML Engineering";
+  }
+
+  if (/\b(data analyst|analytics engineer|bi engineer)\b/i.test(text)) {
+    return "Analytics / Data";
+  }
+
+  return "General";
+}
+
+function detectSeniority(text: string, role: string) {
+  const combined = `${role} ${text}`.toLowerCase();
+
+  if (/\b(principal|staff|lead)\b/.test(combined)) return "Lead";
+  if (/\b(senior|5\+ years|6\+ years|7\+ years)\b/.test(combined)) return "Senior";
+  if (/\b(mid|mid-level|mid level|2\+ years|3\+ years)\b/.test(combined)) return "Mid";
+  if (/\b(graduate|entry|junior|intern)\b/.test(combined)) return "Junior";
+
+  return "Unspecified";
+}
+
+function sentenceList(text: string) {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function scoreJobSkill(skill: string, text: string) {
+  const normalized = text.toLowerCase();
+  let score = 0;
+
+  if (normalized.includes(skill)) score += 2;
+  if (new RegExp(`(required|must have|strong|proficien|expert|experience).{0,40}${skill}`, "i").test(text)) score += 3;
+  if (new RegExp(`${skill}.{0,40}(required|must have|strong|proficien|expert|experience)`, "i").test(text)) score += 2;
+  if (new RegExp(`responsibilit|build|deploy|work across|ownership`, "i").test(text) && normalized.includes(skill)) score += 1;
+
+  return score;
+}
+
+function deriveMustHaves(jobDescription: string, jobSkills: string[]) {
+  return jobSkills
+    .map((skill) => ({ skill, score: scoreJobSkill(skill, jobDescription) }))
+    .filter((entry) => entry.score >= 2)
+    .sort((left, right) => right.score - left.score)
+    .map((entry) => entry.skill)
+    .slice(0, 8);
+}
+
+function deriveNiceToHaves(jobDescription: string, jobSkills: string[], mustHaves: string[]) {
+  const preferredZone = sentenceList(jobDescription)
+    .filter((sentence) => /\b(preferred|bonus|nice to have|valued|plus)\b/i.test(sentence))
+    .join(" ")
+    .toLowerCase();
+
+  return unique(
+    jobSkills.filter((skill) => !mustHaves.includes(skill) && preferredZone.includes(skill))
+  ).slice(0, 6);
+}
+
+function deriveBusinessNeeds(context: AgentContext) {
+  const text = context.target.jobDescription.toLowerCase();
+  const roleThemes = context.nlp?.roleThemes ?? [];
+  const needs = [...roleThemes];
+
+  if (/\bstakeholder|cross-functional|communicat/i.test(text)) needs.push("stakeholder communication");
+  if (/\bproduct\b|user experience|customer/i.test(text)) needs.push("product thinking");
+  if (/\bproduction\b|deploy|scale|maintain/i.test(text)) needs.push("ml production");
+  if (/\bmentor|guide|knowledge sharing/i.test(text)) needs.push("mentorship");
+
+  return unique(needs).slice(0, 6);
+}
+
+function deriveSuccessSignals(jobDescription: string) {
+  const normalized = jobDescription.toLowerCase();
+  const signals: string[] = [];
+
+  if (/\bproduction\b|deploy|operate|maintain/i.test(normalized)) signals.push("production ownership");
+  if (/\bproduct teams|stakeholder|cross-functional/i.test(normalized)) signals.push("cross-functional impact");
+  if (/\bmillions|scale|impact|business performance|measurable/i.test(normalized)) signals.push("measurable outcomes");
+  if (/\breasoning|first principles|problem solving/i.test(normalized)) signals.push("strong reasoning");
+
+  return unique(signals);
 }
 
 export async function runJobAgent(context: AgentContext): Promise<AgentResult<JobAgentOutput>> {
-  const jd = context.target.jobDescription.toLowerCase();
-  const fallbackOutput: JobAgentOutput = {
-    seniority: context.nlp?.seniorityHint || (/\b(senior|lead|5\+ years)\b/i.test(jd) ? "Senior" : "Unspecified"),
-    roleFamily: /\b(data scientist|applied scientist)\b/i.test(jd)
-      ? "Data / Applied Science"
-      : /\b(ai engineer|ml engineer|machine learning engineer)\b/i.test(jd)
-        ? "AI / ML Engineering"
-        : "General",
-    mustHaves: ["python", "sql", "machine learning", "experimentation"].filter((skill) =>
-      jd.includes(skill)
-    ),
-    niceToHaves: ["forecasting", "optimization", "bandits", "reinforcement learning"].filter(
-      (skill) => jd.includes(skill)
-    ),
+  const jobDescription = context.target.jobDescription;
+  const role = context.target.targetRole || "";
+  const jobSkills = context.nlp?.jobSkills ?? [];
+  const mustHaves = deriveMustHaves(jobDescription, jobSkills);
+  const niceToHaves = deriveNiceToHaves(jobDescription, jobSkills, mustHaves);
+
+  const output: JobAgentOutput = {
+    seniority: detectSeniority(jobDescription, role),
+    roleFamily: detectRoleFamily(`${role} ${jobDescription}`),
+    mustHaves: mustHaves.length ? mustHaves : jobSkills.slice(0, 6),
+    niceToHaves,
     languageRequirements: context.nlp?.detectedLanguages.length
       ? context.nlp.detectedLanguages
-      : detectLanguageRequirements(context.target.jobDescription),
-    businessNeeds: context.nlp?.roleThemes.slice(0, 4) ?? [],
-    successSignals: ["production ownership", "cross-functional impact", "measurable outcomes"].filter(
-      (signal) => jd.includes(signal.split(" ")[0])
-    )
+      : detectLanguageRequirements(jobDescription),
+    businessNeeds: deriveBusinessNeeds(context),
+    successSignals: deriveSuccessSignals(jobDescription)
   };
-  const prompt = buildJobAgentPrompt(context);
-  const response = await invokeRoleForgeAgent<JobAgentOutput>(
-    "job-agent",
-    prompt.system,
-    prompt.user
-  );
-  const normalizedOutput = response.output
-    ? {
-        seniority:
-          typeof response.output.seniority === "string" ? response.output.seniority : fallbackOutput.seniority,
-        roleFamily:
-          typeof response.output.roleFamily === "string" ? response.output.roleFamily : fallbackOutput.roleFamily,
-        mustHaves: normalizeStringArray(response.output.mustHaves),
-        niceToHaves: normalizeStringArray(response.output.niceToHaves),
-        languageRequirements: normalizeStringArray(response.output.languageRequirements),
-        businessNeeds: normalizeStringArray(response.output.businessNeeds),
-        successSignals: normalizeStringArray(response.output.successSignals)
-      }
-    : null;
 
   return {
     agent: "job-agent",
-    mode: "llm",
-    model: response.model,
-    usedFallback: !normalizedOutput,
-    output: normalizedOutput ?? fallbackOutput,
-    notes: normalizedOutput
-      ? ["Job Agent used its own model call to parse seniority, must-haves, and language requirements."]
-      : ["Job Agent fell back to deterministic parsing because the model response was unavailable."]
+    mode: "deterministic",
+    model: "nlp-parser",
+    usedFallback: false,
+    output,
+    notes: ["Job Agent used deterministic parsing and NLP signals to extract role requirements, seniority, and business needs."]
   };
 }

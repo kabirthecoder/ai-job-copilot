@@ -2,26 +2,26 @@ const agents = [
   {
     name: "resume-agent",
     purpose: "Extract identity, skills, and evidence lines from resume text",
-    llm: true,
-    fallback: true
+    llm: false,
+    fallback: false
   },
   {
     name: "job-agent",
     purpose: "Parse seniority, role family, must-haves, and language requirements",
-    llm: true,
-    fallback: true
+    llm: false,
+    fallback: false
   },
   {
     name: "research-agent",
     purpose: "Summarize company context and research signals",
-    llm: true,
-    fallback: true
+    llm: false,
+    fallback: false
   },
   {
     name: "gap-agent",
     purpose: "Compare resume and JD outputs into strengths, gaps, and focus areas",
-    llm: true,
-    fallback: true
+    llm: false,
+    fallback: false
   },
   {
     name: "rewrite-agent",

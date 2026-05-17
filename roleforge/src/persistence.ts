@@ -43,27 +43,42 @@ export async function persistRun(run: RoleForgeRun) {
   await writeFile(filePath, JSON.stringify(run, null, 2), "utf8");
 }
 
-export async function loadRun(runId: string) {
+export async function loadRun(runId: string, userId?: string) {
   await ensureRunsDir();
   const filePath = path.join(RUNS_DIR, `${runId}.json`);
   const raw = await readFile(filePath, "utf8");
-  return JSON.parse(raw) as RoleForgeRun;
+  const run = JSON.parse(raw) as RoleForgeRun;
+
+  if (userId && run.request?.userId !== userId) {
+    throw new Error("Run not found");
+  }
+
+  return run;
 }
 
-export async function listRuns() {
+export async function listRuns(userId?: string) {
   await ensureRunsDir();
   const files = (await readdir(RUNS_DIR))
     .filter((name) => name.endsWith(".json"))
     .sort()
     .reverse()
-    .slice(0, 30);
+    .slice(0, 120);
 
   const summaries: RoleForgeRunSummary[] = [];
 
   for (const file of files) {
     const raw = await readFile(path.join(RUNS_DIR, file), "utf8");
     const run = JSON.parse(raw) as RoleForgeRun;
+    if (userId && run.request?.userId !== userId) {
+      continue;
+    }
+    if (userId && !run.request?.userId) {
+      continue;
+    }
     summaries.push(summarizeRun(run));
+    if (summaries.length >= 30) {
+      break;
+    }
   }
 
   return summaries;

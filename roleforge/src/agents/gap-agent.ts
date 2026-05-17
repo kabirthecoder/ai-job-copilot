@@ -1,150 +1,96 @@
-import { invokeRoleForgeAgent } from "../llm.js";
-import { buildGapAgentPrompt } from "../prompts.js";
 import type {
   AgentResult,
   GapAgentOutput,
   JobAgentOutput,
+  NlpSignals,
   ResumeAgentOutput
 } from "../types.js";
-
-function normalizeStringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
-}
-
-function normalizeScore(value: unknown, fallback: number) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return fallback;
-  }
-
-  if (value >= 0 && value <= 1) {
-    return Math.round(value * 100);
-  }
-
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function normalizeEvidenceMap(value: unknown) {
-  return Array.isArray(value)
-    ? value
-        .map((item) => {
-          if (!item || typeof item !== "object") return null;
-          const skill = "skill" in item && typeof item.skill === "string" ? item.skill : "";
-          const status =
-            "status" in item && (item.status === "matched" || item.status === "missing")
-              ? item.status
-              : "missing";
-          const evidence = "evidence" in item && typeof item.evidence === "string" ? item.evidence : "";
-          return skill ? { skill, status, evidence } : null;
-        })
-        .filter(
-          (item): item is { skill: string; status: "matched" | "missing"; evidence: string } =>
-            Boolean(item)
-        )
-    : [];
-}
 
 function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function unique(items: string[]) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+function buildScoringCriteria(job: JobAgentOutput, nlp?: NlpSignals) {
+  return unique([
+    ...job.mustHaves,
+    ...(nlp?.jobSkills ?? []),
+    ...job.niceToHaves.slice(0, 4)
+  ]);
+}
+
+function computeBaselineAtsScore(
+  resume: ResumeAgentOutput,
+  job: JobAgentOutput,
+  nlp?: NlpSignals
+) {
+  const scoringCriteria = buildScoringCriteria(job, nlp);
+  const matchedCriteria = scoringCriteria.filter((skill) => resume.skills.includes(skill));
+  const matchedMustHaves = job.mustHaves.filter((skill) => resume.skills.includes(skill));
+
+  const mustHaveCoverage = job.mustHaves.length
+    ? matchedMustHaves.length / job.mustHaves.length
+    : 0.65;
+  const broaderCoverage = scoringCriteria.length
+    ? matchedCriteria.length / scoringCriteria.length
+    : mustHaveCoverage;
+
+  const weightedScore = (mustHaveCoverage * 0.6) + (broaderCoverage * 0.4);
+  const baseline = 28 + Math.round(weightedScore * 62);
+
+  return {
+    scoringCriteria,
+    matchedCriteria,
+    matchedMustHaves,
+    baselineAtsScore: clampScore(baseline)
+  };
+}
+
 export async function runGapAgent(
   resume: ResumeAgentOutput,
-  job: JobAgentOutput
+  job: JobAgentOutput,
+  nlp?: NlpSignals
 ): Promise<AgentResult<GapAgentOutput>> {
-  const matchedMustHaves = job.mustHaves.filter((skill) => resume.skills.includes(skill));
+  const {
+    scoringCriteria,
+    matchedCriteria,
+    matchedMustHaves,
+    baselineAtsScore
+  } = computeBaselineAtsScore(resume, job, nlp);
   const missingMustHaves = job.mustHaves.filter((skill) => !resume.skills.includes(skill));
-  const atsScore = job.mustHaves.length
-    ? Math.round((matchedMustHaves.length / job.mustHaves.length) * 100)
-    : 72;
-  const fallbackOutput: GapAgentOutput = {
-    strengths: matchedMustHaves,
-    gaps: missingMustHaves,
-    focusAreas: missingMustHaves.slice(0, 3),
-    atsScore,
-    targetAtsScore: Math.max(90, atsScore),
+  const missingCriteria = scoringCriteria.filter((skill) => !resume.skills.includes(skill));
+  const output: GapAgentOutput = {
+    strengths: matchedCriteria.slice(0, 6),
+    gaps: missingCriteria.slice(0, 6),
+    focusAreas: missingCriteria.slice(0, 3),
+    atsScore: baselineAtsScore,
+    targetAtsScore: Math.max(88, Math.min(96, baselineAtsScore + 16)),
     matchedCount: matchedMustHaves.length,
-    missingCount: missingMustHaves.length,
-    evidenceMap: job.mustHaves.slice(0, 8).map((skill) => ({
+    missingCount: missingCriteria.length,
+    evidenceMap: scoringCriteria.slice(0, 10).map((skill) => ({
       skill,
       status: resume.skills.includes(skill) ? "matched" : "missing",
       evidence: resume.evidenceLines.find((line) => line.toLowerCase().includes(skill)) ?? "No direct evidence found."
     })),
     applicationStrategy: [
-      "Lead with matched strengths that map directly to the job's must-have skills.",
-      "Acknowledge one high-value gap and show a concrete learning or project plan.",
-      "Use resume bullets and cover letter examples that emphasize production impact."
+      "Lead with the skills you already have that match the job most closely.",
+      "Address one or two important gaps with an honest learning plan or a relevant project example.",
+      "Use resume bullets and cover letter examples that show real product or project impact."
     ],
-    highPriorityFixes: missingMustHaves.slice(0, 3).map(
+    highPriorityFixes: missingCriteria.slice(0, 3).map(
       (skill) => `Add credible evidence for ${skill} in the summary or experience bullets.`
     )
   };
-  const prompt = buildGapAgentPrompt(resume, job);
-  const response = await invokeRoleForgeAgent<GapAgentOutput>(
-    "gap-agent",
-    prompt.system,
-    prompt.user
-  );
-  const normalizedOutput = response.output
-    ? {
-        strengths: normalizeStringArray(response.output.strengths),
-        gaps: normalizeStringArray(response.output.gaps),
-        focusAreas: normalizeStringArray(response.output.focusAreas),
-        atsScore: normalizeScore(response.output.atsScore, fallbackOutput.atsScore),
-        targetAtsScore: normalizeScore(response.output.targetAtsScore, fallbackOutput.targetAtsScore),
-        matchedCount:
-          typeof response.output.matchedCount === "number"
-            ? response.output.matchedCount
-            : fallbackOutput.matchedCount,
-        missingCount:
-          typeof response.output.missingCount === "number"
-            ? response.output.missingCount
-            : fallbackOutput.missingCount,
-        evidenceMap: normalizeEvidenceMap(response.output.evidenceMap),
-        applicationStrategy: normalizeStringArray(response.output.applicationStrategy),
-        highPriorityFixes: normalizeStringArray(response.output.highPriorityFixes)
-      }
-    : null;
-
-  const hasWeakStructuredOutput =
-    normalizedOutput &&
-    normalizedOutput.strengths.length === 0 &&
-    normalizedOutput.evidenceMap.length === 0;
-
-  const output = hasWeakStructuredOutput || !normalizedOutput
-    ? fallbackOutput
-    : {
-        ...normalizedOutput,
-        strengths: normalizedOutput.strengths.length ? normalizedOutput.strengths : fallbackOutput.strengths,
-        gaps: normalizedOutput.gaps.length ? normalizedOutput.gaps : fallbackOutput.gaps,
-        focusAreas: normalizedOutput.focusAreas.length ? normalizedOutput.focusAreas : fallbackOutput.focusAreas,
-        atsScore: normalizedOutput.atsScore === 0 && matchedMustHaves.length > 0
-          ? fallbackOutput.atsScore
-          : clampScore(normalizedOutput.atsScore),
-        targetAtsScore: clampScore(Math.max(normalizedOutput.targetAtsScore, fallbackOutput.targetAtsScore)),
-        matchedCount: normalizedOutput.matchedCount || fallbackOutput.matchedCount,
-        missingCount:
-          typeof normalizedOutput.missingCount === "number"
-            ? normalizedOutput.missingCount
-            : fallbackOutput.missingCount,
-        evidenceMap: normalizedOutput.evidenceMap.length ? normalizedOutput.evidenceMap : fallbackOutput.evidenceMap,
-        applicationStrategy:
-          normalizedOutput.applicationStrategy.length
-            ? normalizedOutput.applicationStrategy
-            : fallbackOutput.applicationStrategy,
-        highPriorityFixes:
-          normalizedOutput.highPriorityFixes.length
-            ? normalizedOutput.highPriorityFixes
-            : fallbackOutput.highPriorityFixes
-      };
 
   return {
     agent: "gap-agent",
-    mode: "llm",
-    model: response.model,
-    usedFallback: !normalizedOutput || Boolean(hasWeakStructuredOutput),
+    mode: "deterministic",
+    model: "scoring-engine",
+    usedFallback: false,
     output,
-    notes: normalizedOutput && !hasWeakStructuredOutput
-      ? ["Gap Agent used its own model call to compare profile strengths, gaps, and focus areas."]
-      : ["Gap Agent fell back to deterministic comparison because the model response was unavailable or too weak."]
+    notes: ["Gap Agent used deterministic scoring to produce fit, gaps, and improvement priorities."]
   };
 }

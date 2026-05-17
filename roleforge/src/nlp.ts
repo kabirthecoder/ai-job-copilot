@@ -1,51 +1,56 @@
 import type { AgentContext, NlpSignals } from "./types.js";
 
-const SKILL_CATALOG = [
-  "python",
-  "sql",
-  "r",
-  "react",
-  "next.js",
-  "typescript",
-  "javascript",
-  "machine learning",
-  "deep learning",
-  "llm",
-  "nlp",
-  "rag",
-  "embeddings",
-  "vector search",
-  "experimentation",
-  "a/b testing",
-  "forecasting",
-  "time series",
-  "optimization",
-  "pricing",
-  "recommendation systems",
-  "reinforcement learning",
-  "bandits",
-  "data engineering",
-  "gcp",
-  "aws",
-  "docker",
-  "kubernetes",
-  "scikit-learn",
-  "pandas"
-];
+const SKILL_ALIASES: Record<string, string[]> = {
+  python: ["python", "python3"],
+  sql: ["sql", "postgresql", "mysql", "sqlite"],
+  r: [" r ", "r language"],
+  react: ["react", "reactjs", "react.js"],
+  "next.js": ["next.js", "nextjs"],
+  typescript: ["typescript", "ts"],
+  javascript: ["javascript", "js", "node.js", "nodejs"],
+  "machine learning": ["machine learning", "ml models", "predictive modeling"],
+  "deep learning": ["deep learning", "neural network", "neural networks"],
+  llm: ["llm", "large language model", "large language models", "generative ai"],
+  nlp: ["nlp", "natural language processing"],
+  rag: ["rag", "retrieval augmented generation"],
+  embeddings: ["embeddings", "semantic similarity"],
+  "vector search": ["vector search", "vector database", "vector db"],
+  experimentation: ["experimentation", "experiment design", "ab testing", "a/b testing", "split testing"],
+  forecasting: ["forecasting", "forecast model", "demand planning"],
+  "time series": ["time series", "time-series"],
+  optimization: ["optimization", "optimisation", "linear programming"],
+  pricing: ["pricing", "dynamic pricing", "yield management", "revenue optimization"],
+  "recommendation systems": ["recommendation systems", "recommender systems", "ranking systems"],
+  "reinforcement learning": ["reinforcement learning", "rl"],
+  bandits: ["bandits", "multi armed bandit", "multi-armed bandit"],
+  "data engineering": ["data engineering", "etl", "elt", "data pipelines"],
+  gcp: ["gcp", "google cloud"],
+  aws: ["aws", "amazon web services"],
+  azure: ["azure", "microsoft azure"],
+  docker: ["docker", "containerization", "containerisation"],
+  kubernetes: ["kubernetes", "k8s"],
+  "scikit-learn": ["scikit-learn", "sklearn"],
+  pandas: ["pandas"],
+  pytorch: ["pytorch"],
+  tensorflow: ["tensorflow"],
+  rust: ["rust"],
+  grpc: ["grpc"],
+  rest: ["rest", "rest api", "restful api"]
+};
 
-const ROLE_THEMES = [
-  "pricing",
-  "optimization",
-  "forecasting",
-  "recommendation",
-  "experimentation",
-  "real-time systems",
-  "stakeholder communication",
-  "mentorship",
-  "product thinking",
-  "ml production",
-  "data engineering"
-];
+const ROLE_THEME_ALIASES: Record<string, string[]> = {
+  pricing: ["pricing", "revenue optimization", "yield management"],
+  optimization: ["optimization", "optimisation"],
+  forecasting: ["forecasting", "demand planning"],
+  recommendation: ["recommendation", "ranking", "recommender"],
+  experimentation: ["experimentation", "a/b testing", "ab testing", "split testing"],
+  "real-time systems": ["real-time", "low latency", "high throughput", "at scale"],
+  "stakeholder communication": ["stakeholder", "cross-functional", "communicate insights", "data storytelling"],
+  mentorship: ["mentor", "mentorship", "guide less experienced", "knowledge sharing"],
+  "product thinking": ["product", "user experience", "customer impact"],
+  "ml production": ["production", "deploy", "monitoring", "iteration", "serve millions"],
+  "data engineering": ["data engineering", "pipelines", "etl", "elt"]
+};
 
 function normalize(text: string) {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
@@ -95,12 +100,20 @@ export function detectSeniority(text: string) {
 
 export function extractSkills(text: string) {
   const normalized = normalize(text);
-  return unique(SKILL_CATALOG.filter((skill) => containsSkill(normalized, skill)));
+  return unique(
+    Object.entries(SKILL_ALIASES)
+      .filter(([skill, aliases]) => containsSkill(normalized, skill) || aliases.some((alias) => normalized.includes(alias)))
+      .map(([skill]) => skill)
+  );
 }
 
 export function deriveRoleThemes(text: string) {
   const normalized = normalize(text);
-  return unique(ROLE_THEMES.filter((theme) => normalized.includes(theme))).slice(0, 8);
+  return unique(
+    Object.entries(ROLE_THEME_ALIASES)
+      .filter(([theme, aliases]) => normalized.includes(theme) || aliases.some((alias) => normalized.includes(alias)))
+      .map(([theme]) => theme)
+  ).slice(0, 8);
 }
 
 export function buildNlpSignals(context: AgentContext): NlpSignals {

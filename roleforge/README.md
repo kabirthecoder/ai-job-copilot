@@ -1,211 +1,274 @@
 # RoleForge
 
-RoleForge is a separate, more agentic follow-up project to the baseline career copilot. The current product mode is intentionally focused on one workflow: upload a resume, paste one job description, analyze fit, rewrite the CV, and produce a stronger cover letter.
+RoleForge is the advanced version of this project: a secure, multi-user career copilot built around a production-style backend instead of a single prompt. It helps a user upload a CV, parse a job description, understand fit, rewrite the CV for the role, and generate a more human cover letter inside a private workspace.
 
-This version includes a lightweight retrieval layer, local embeddings, richer NLP signals, and deployment scaffolding so it can grow into a production-style service.
+## What changed in this version
 
-## Design Goals
+The updated RoleForge build is no longer just a local demo flow. It now includes:
 
-- Make agent responsibilities explicit instead of hiding them in one route
-- Give each agent a typed contract for inputs and outputs
-- Allow some agents to stay deterministic while narrative-heavy agents use an LLM
-- Make it easy to later add per-agent memory, approvals, and tool permissions
-- Keep the system inspectable so the user can see what each agent contributed
+- secure sign-up and sign-in with private sessions
+- per-user run ownership and private history
+- hidden resume-text handling behind file upload
+- deterministic NLP parsing for CV and JD analysis
+- retrieval and embeddings for evidence ranking
+- deterministic fit scoring instead of fake freeform ATS scoring
+- multi-agent writing and review on top of that structured backbone
+- rate limiting and basic request hardening
 
-## Planned Agents
+## Current architecture
+
+RoleForge is best described as:
+
+**NLP-first, multi-agent on top**
+
+That means the system now uses deterministic parsing and retrieval for facts, then uses specialized agents for writing and review.
+
+### Layer 1: App and security
+
+- browser UI and API server: `server.mjs`
+- account creation and sessions: `src/auth.ts`
+- per-user run storage: `src/persistence.ts`
+
+This layer is responsible for:
+
+- sign-up / sign-in
+- secure session cookies
+- private run history
+- request validation
+- upload handling
+
+### Layer 2: Parsing and NLP
+
+- CV/JD NLP extraction: `src/nlp.ts`
+- deterministic CV parser: `src/agents/resume-agent.ts`
+- deterministic JD parser: `src/agents/job-agent.ts`
+
+This layer is responsible for:
+
+- skill extraction
+- language detection
+- seniority hints
+- role-theme extraction
+- evidence-line identification
+- must-have / nice-to-have parsing
+
+### Layer 3: Retrieval and embeddings
+
+- embeddings provider logic: `src/embeddings.ts`
+- retrieval orchestration: `src/retrieval.ts`
+- local vector cache: `src/vector-store.ts`
+
+This layer is responsible for:
+
+- chunking CV and JD text
+- embedding chunks
+- ranking relevant evidence
+- feeding the strongest supporting context into downstream steps
+
+### Layer 4: Scoring and analysis
+
+- deterministic gap and fit scoring: `src/agents/gap-agent.ts`
+
+This layer is responsible for:
+
+- strengths
+- missing areas
+- improvement priorities
+- fit score
+- expected score after CV changes
+
+### Layer 5: Multi-agent writing
+
+- CV rewrite: `src/agents/rewrite-agent.ts`
+- cover letter draft: `src/agents/cover-letter-agent.ts`
+- cover letter humanizer: `src/agents/cover-letter-humanizer-agent.ts`
+- final review: `src/agents/review-agent.ts`
+
+These are the agents that still depend most on the LLM.
+
+## Current agent split
+
+### Deterministic / NLP-backed agents
 
 - `resume-agent`
-  - extracts identity, skills, experience fragments, projects, and evidence
 - `job-agent`
-  - extracts role family, seniority, must-haves, nice-to-haves, language requirements, and themes
 - `research-agent`
-  - collects company context, product direction, and latest verified signals
 - `gap-agent`
-  - compares resume and job outputs to produce strengths, gaps, and focus areas
+
+These now run without depending on the LLM to produce the core facts.
+
+### LLM-backed agents
+
 - `rewrite-agent`
-  - rewrites resume bullets based on the role and gap analysis
 - `cover-letter-agent`
-  - drafts a role-specific cover letter using job + research + resume context
+- `cover-letter-humanizer-agent`
 - `review-agent`
-  - checks for generic wording, unsupported claims, and low-personalization output
 
-## Model Assignment
+These are used where generation, tone, and rewriting actually matter.
 
-Every agent in `roleforge/` now makes its own model call and can use its own provider/model assignment.
+## Why this architecture is better
 
-Global defaults:
+Earlier versions depended too heavily on the model for everything. That caused:
 
-- `ROLEFORGE_PROVIDER`
-- `ROLEFORGE_OLLAMA_MODEL`
-- `ROLEFORGE_OPENAI_MODEL`
+- unstable parsing
+- inflated scores
+- too many fallbacks
+- generic outputs
 
-Per-agent overrides:
+The current version fixes that by separating:
 
-- `ROLEFORGE_RESUME_AGENT_PROVIDER`
-- `ROLEFORGE_RESUME_AGENT_MODEL`
-- `ROLEFORGE_JOB_AGENT_PROVIDER`
-- `ROLEFORGE_JOB_AGENT_MODEL`
-- `ROLEFORGE_RESEARCH_AGENT_PROVIDER`
-- `ROLEFORGE_RESEARCH_AGENT_MODEL`
-- `ROLEFORGE_GAP_AGENT_PROVIDER`
-- `ROLEFORGE_GAP_AGENT_MODEL`
-- `ROLEFORGE_REWRITE_AGENT_PROVIDER`
-- `ROLEFORGE_REWRITE_AGENT_MODEL`
-- `ROLEFORGE_COVER_LETTER_AGENT_PROVIDER`
-- `ROLEFORGE_COVER_LETTER_AGENT_MODEL`
-- `ROLEFORGE_REVIEW_AGENT_PROVIDER`
-- `ROLEFORGE_REVIEW_AGENT_MODEL`
+- facts
+- retrieval
+- scoring
+- writing
 
-Each agent can also override its base URL with the same naming pattern, for example:
+This is much closer to how a production-grade AI product should be structured.
 
-- `ROLEFORGE_COVER_LETTER_AGENT_BASE_URL`
+## Backend status right now
 
-## Retrieval And NLP
+### What is working well
 
-RoleForge now has a pre-agent intelligence layer:
+- private user accounts and sessions
+- user-scoped runs
+- file upload and resume extraction
+- deterministic CV/JD parsing
+- deterministic fit scoring
+- retrieval flow and vector caching
+- secure route checks
 
-- `src/nlp.ts`
-  - extracts skills, language requirements, seniority hints, and role themes
-- `src/embeddings.ts`
-  - supports `local`, `ollama`, or `openai` embeddings
-- `src/retrieval.ts`
-  - chunks resume and JD text, ranks relevant passages, and feeds the best hits into downstream prompts
-- `src/vector-store.ts`
-  - persists vectorized chunks in `data/vector-store/index.json`
+### What is still the weakest part
 
-This gives the agents better context than raw full-text prompting alone and is a practical stepping stone toward pgvector or a hosted vector database later.
+The writing agents still fall back too often on a local Ollama model.
 
-## Agent Console And Persistence
+Current smoke-test result after the backend redesign:
 
-Every `POST /run` request now persists a full agent trace under `data/runs/`.
+- `failures: 0`
+- `averageFallbacksPerRun: 4`
 
-New endpoints:
+This is much better than the earlier state, but the writing layer still needs stronger inference if we want true production-grade output quality.
 
-- `GET /runs`
-  - returns recent persisted run summaries
-- `GET /runs/:id`
-  - returns one full run as JSON
-- `GET /`
-  - browser console for launching and inspecting focused CV/cover-letter runs
-- `GET /console`
-  - alias of the same browser console
-- `GET /console/:id`
-  - simple HTML detail page for one agent run
-
-Each run now stores:
-
-- NLP signals
-- retrieval hits
-- per-agent outputs
-- agent notes
-- whether an agent fell back
-- a revised resume artifact
-- review recommendation
-
-## Local API And Deployment
-
-RoleForge now includes a minimal HTTP entrypoint so it can be deployed as a small API service.
-
-Local run:
+## Local run
 
 ```bash
+cd roleforge
 npm install
 npm run build
 npm run start
 ```
 
-Then send a `POST /run` request with:
+Then open:
 
-```json
-{
-  "candidate": {
-    "name": "Kabir",
-    "email": "kabir@example.com",
-    "resumeText": "..."
-  },
-  "target": {
-    "targetRole": "ML Engineer",
-    "companyName": "trivago",
-    "companyWebsite": "https://www.trivago.com",
-    "jobDescription": "..."
-  }
-}
+```bash
+http://localhost:8806
 ```
 
-The response now includes:
+## Environment
 
-- `trace`
-  - a step-by-step record of each agent run
-- `rewrite.output.revisedResumeArtifact`
-  - a markdown resume artifact tailored to the role
-- `coverLetter.output.openingHook`
-  - a reusable opening idea for the final application draft
-- `gap.output.applicationStrategy`
-  - tactical guidance for how to position the application
+Example envs are in `.env.example`.
 
-Deployment files:
+Important ones:
 
-- `.env.example`
-- `Dockerfile`
-- `.dockerignore`
+- `ROLEFORGE_PROVIDER`
+- `ROLEFORGE_OLLAMA_MODEL`
+- `ROLEFORGE_OPENAI_MODEL`
+- `ROLEFORGE_EMBEDDING_PROVIDER`
+- `OPENAI_API_KEY`
+- `ROLEFORGE_PORT`
 
-## Fastest Deployment Path
+### Recommended local setup
 
-For the current codebase, the cleanest first deployment target is a long-running Node host such as Railway or Render, not serverless.
+- model provider: `ollama`
+- local model: `qwen2.5:3b`
+- embedding provider: `ollama` or `openai`
 
-Recommended production split:
+### Recommended production setup
 
-- App/API: Railway or Render
-- Storage/Auth/DB later: Supabase
-- Local dev model: Ollama
-- Production model: hosted API such as OpenAI
+- writing model provider: `openai`
+- embedding provider: `openai`
+- database: `Supabase Postgres`
+- vector search: `pgvector`
+- file storage: `Supabase Storage`
 
-Why:
+## Production readiness
 
-- this app currently runs as a persistent Node server
-- the multi-agent flow can take longer than a typical serverless request
-- local JSON run history is fine for local demos but should eventually move to a real database
+RoleForge is now a strong **pre-production** app, but not yet a full public production deployment.
 
-### Railway / Render checklist
+### Already in place
 
-1. Set build command to `npm install && npm run build`
-2. Set start command to `npm run start`
-3. Set env vars from `.env.example`
-4. Expose the service on `ROLEFORGE_PORT`
-5. In production, prefer:
-   - `ROLEFORGE_PROVIDER=openai`
-   - `OPENAI_API_KEY=...`
-   - `ROLEFORGE_OPENAI_MODEL=gpt-5.4-mini`
+- sign-up / sign-in
+- private user-scoped runs
+- rate limiting
+- same-origin validation for writes
+- hardened response headers
+- deterministic scoring backbone
 
-### Important production note
+### Still required for full production
 
-The current run history uses local files under `data/runs/`. That works for local development and simple container demos, but it is not durable multi-user storage. For a real production rollout, move persistence to Postgres/Supabase next.
+1. Move users, sessions, and runs from local JSON files to Postgres/Supabase.
+2. Move vector storage from local JSON to `pgvector`.
+3. Store uploaded CVs in object storage instead of request memory only.
+4. Add password reset and email verification.
+5. Add distributed rate limiting.
+6. Add background jobs for long agent runs.
+7. Add monitoring, logging, and failure analytics.
+8. Use hosted inference for the writing agents in production.
 
-Recommended embedding setups:
+## Recommended deployment path
 
-- local only
-  - `ROLEFORGE_EMBEDDING_PROVIDER=local`
-- Ollama embeddings
-  - `ROLEFORGE_EMBEDDING_PROVIDER=ollama`
-  - `ROLEFORGE_OLLAMA_EMBEDDING_MODEL=nomic-embed-text`
-- Default local model in this repo is now `qwen2.5:3b` for a better balance of structured output quality and local performance.
-- OpenAI embeddings
-  - `ROLEFORGE_EMBEDDING_PROVIDER=openai`
-  - `OPENAI_API_KEY=...`
-  - `ROLEFORGE_OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
+### Short term
 
-## Next Build Direction
+- host the app/API on Railway or Render
+- keep Ollama only for local development
+- use hosted model inference in production
 
-1. Move persistence from local JSON files to Postgres/Supabase
-2. Add auth and per-user run isolation
-3. Swap the local embedding fallback for a real embedding provider or pgvector store
-4. Add web research connectors for verified company/news enrichment
-5. Improve the CV rewrite and cover-letter quality with stronger reviewer loops
+### Full production target
 
-## Agent Check
+- app/API: Next.js or Node service
+- auth/database/storage: Supabase
+- vectors: `pgvector`
+- background jobs: worker or queue-backed jobs
 
-Run this inside `roleforge/` to inspect the current provider/model setup for every agent:
+## Useful scripts
+
+Check the agent setup:
 
 ```bash
 npm run agents:check
 ```
+
+Run the backend smoke test:
+
+```bash
+npm run smoke
+```
+
+Type-check the backend:
+
+```bash
+npm run check
+```
+
+## Repo guide
+
+- `server.mjs`
+  - app server, auth endpoints, upload flow, UI shell
+- `src/auth.ts`
+  - local auth/session handling
+- `src/nlp.ts`
+  - NLP extraction and role/theme logic
+- `src/retrieval.ts`
+  - retrieval context builder
+- `src/agents/`
+  - agent implementations
+- `src/orchestrator.ts`
+  - end-to-end run orchestration
+- `src/persistence.ts`
+  - run storage
+
+## Next highest-impact work
+
+1. Upgrade the writing agents so they fall back less often.
+2. Move persistence to Supabase/Postgres.
+3. Move vector storage to `pgvector`.
+4. Add password reset and email verification.
+5. Prepare deployment config for Railway/Render plus hosted inference.

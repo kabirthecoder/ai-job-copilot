@@ -4,6 +4,12 @@ export type CandidateProfile = {
   resumeText: string;
 };
 
+export type AuthIdentity = {
+  userId: string;
+  email: string;
+  name: string;
+};
+
 export type JobTarget = {
   targetRole?: string;
   companyName?: string;
@@ -55,6 +61,7 @@ export type AgentContext = {
   preferences?: JobSearchPreferences;
   nlp?: NlpSignals;
   retrieval?: RetrievalContext;
+  auth?: AuthIdentity;
 };
 
 export type JobLead = {
@@ -216,6 +223,7 @@ export type RoleForgeRun = {
   id: string;
   createdAt: string;
   request: {
+    userId: string;
     candidateName: string;
     companyName: string;
     targetRole: string;

@@ -27,7 +27,7 @@ export async function runRoleForge(context: AgentContext): Promise<RoleForgeRun>
     runJobAgent(enrichedContext),
     runResearchAgent(enrichedContext)
   ]);
-  const gap = await runGapAgent(resume.output, job.output);
+  const gap = await runGapAgent(resume.output, job.output, nlp);
   const [rewrite, coverLetter] = await Promise.all([
     runRewriteAgent(enrichedContext, resume.output, gap.output),
     runCoverLetterAgent(
@@ -50,6 +50,7 @@ export async function runRoleForge(context: AgentContext): Promise<RoleForgeRun>
     id,
     createdAt,
     request: {
+      userId: context.auth?.userId || "",
       candidateName: context.candidate.name || resume.output.identityHints[0] || "Unknown candidate",
       companyName: context.target.companyName || "Unknown company",
       targetRole: context.target.targetRole || "Unknown role"

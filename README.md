@@ -1,63 +1,87 @@
-# AI Research + Job Copilot
+# AI Job Copilot / RoleForge
 
-An MVP for analyzing resume-job fit, identifying skill gaps, and generating targeted project and interview suggestions.
+This repository now contains two stages of the same idea:
 
-## Current MVP
+- the original `AI Job Copilot` MVP
+- the newer `RoleForge` production-style multi-agent backend
 
-- Resume text + job description input flow
-- Server-side fit analysis endpoint
-- Match score, skill overlap, missing skills, project ideas, and interview prep suggestions
-- UI designed for future expansion into chat, saved sessions, and real LLM workflows
-- Real `.txt` and `.pdf` resume ingestion with extracted text loaded into the form
-- Typed saved-analysis models with local browser storage fallback
-- Real Supabase-ready client helpers plus optional remote sync for saved analyses when env vars are present
-- Local-first LLM support through Ollama, with OpenAI and mock fallback modes
+If you are looking for the latest architecture, use:
 
-## Planned Next Steps
+- [/Users/kabirmehta/Documents/New project/roleforge/README.md](/Users/kabirmehta/Documents/New%20project/roleforge/README.md)
 
-1. Add Supabase auth screens and user-specific saved history
-2. Plug in embeddings and retrieval for better matching
-3. Add model-powered bullet rewriting and cover letter drafting
-4. Introduce prompt versioning and evaluation metrics
-5. Add a conversational chat mode over resume + job context
+## Repo structure
 
-## Environment
+### Baseline MVP
 
-LLM variables:
+The original app is the lighter, earlier version focused on:
 
-- `LLM_PROVIDER` can be `ollama`, `openai`, or `mock`
-- `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`
-- `OLLAMA_MODEL` defaults to `llama3.2:1b`
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `OPENAI_MODEL`
+- resume/job fit analysis
+- local-first usage
+- simple UI flow
+- earlier LLM integration experiments
 
-Optional Supabase variables:
+### RoleForge
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_SUPABASE_TABLE` defaults to `saved_analyses`
+`roleforge/` is the current advanced version. It includes:
 
-If they are missing, the app keeps using local browser storage for saved analyses. If they are present, the app will also try to insert each saved analysis into Supabase through its REST API.
+- secure user accounts and sessions
+- private run history
+- resume upload and extraction
+- deterministic NLP parsing
+- retrieval and embeddings
+- deterministic fit scoring
+- multi-agent CV and cover-letter generation
+- production-minded backend hardening
 
-## How To Use
+## Which version should you use?
 
-1. Run `npm install` once.
-2. Start the app with `npm run dev`.
-3. Open `http://localhost:3000`.
-4. Paste your resume text, a job description, and optional name/company.
-5. Click `Analyze Fit` to generate the project, interview, recruiter, and outreach suggestions.
-6. Use `Save analysis` to store the result locally, and Supabase will sync it too if configured.
+Use **RoleForge** if you want the current serious version of the product.
 
-## Supabase Setup
-
-Create a table like `saved_analyses` with JSONB columns for `input` and `result`, plus text columns for `id`, `source`, `created_at`, and `updated_at`. Add an insert policy for the anon key if you want browser writes to work.
-
-## Local Development
+Start here:
 
 ```bash
+cd roleforge
 npm install
-npm run dev
+npm run build
+npm run start
 ```
 
-Open `http://localhost:3000`.
+Then open:
+
+```bash
+http://localhost:8806
+```
+
+## Current product direction
+
+The project is no longer just “an LLM that reads a resume.”
+
+The updated system is designed as:
+
+- NLP-first
+- retrieval-backed
+- deterministic scoring
+- multi-agent writing and review
+- secure private user workspaces
+
+That updated architecture is documented in detail in:
+
+- [/Users/kabirmehta/Documents/New project/roleforge/README.md](/Users/kabirmehta/Documents/New%20project/roleforge/README.md)
+
+## Current status
+
+The backend has moved significantly beyond MVP:
+
+- account sign-up/sign-in works
+- each user only sees their own runs
+- upload flow works
+- parsing and scoring are now mostly deterministic
+- writing agents remain the main LLM-dependent layer
+
+The next major production steps are:
+
+1. move persistence to Supabase/Postgres
+2. move vector storage to `pgvector`
+3. use hosted inference for writing agents
+4. add password reset and email verification
+5. deploy to Railway/Render or a Next.js + Supabase stack

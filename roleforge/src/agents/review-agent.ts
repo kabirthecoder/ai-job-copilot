@@ -18,6 +18,14 @@ export async function runReviewAgent(
   if (/I am writing to express my interest|I am writing to express my keen interest|esteemed organization/i.test(coverLetter.coverLetter)) {
     issues.push("Opening still sounds generic and should be humanized further.");
   }
+
+  if (/placeholder/i.test(coverLetter.coverLetter)) {
+    issues.push("Company context is still placeholder-like and should not be shipped.");
+  }
+
+  if (/We are hiring|job description required/i.test(coverLetter.coverLetter)) {
+    issues.push("The letter is echoing raw job-description text instead of sounding like a candidate.");
+  }
   const fallbackOutput: ReviewAgentOutput = {
     approved: issues.length === 0,
     issues,

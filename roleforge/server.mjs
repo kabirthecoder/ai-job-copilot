@@ -1,10 +1,117 @@
 import http from "node:http";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  authenticateUser,
+  createSession,
+  getUserFromSession,
+  registerUser,
+  revokeSession
+} from "./dist/auth.js";
 import { runRoleForge } from "./dist/orchestrator.js";
 import { listRuns, loadRun } from "./dist/persistence.js";
 
 const port = Number(process.env.ROLEFORGE_PORT || 8787);
+const SESSION_COOKIE = "roleforge_session";
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMITS = {
+  auth: { limit: 12, windowMs: RATE_LIMIT_WINDOW_MS },
+  upload: { limit: 20, windowMs: RATE_LIMIT_WINDOW_MS },
+  run: { limit: 15, windowMs: RATE_LIMIT_WINDOW_MS },
+  read: { limit: 90, windowMs: RATE_LIMIT_WINDOW_MS }
+};
+const rateLimitStore = new Map();
+
+function parseCookies(request) {
+  return Object.fromEntries(
+    String(request.headers.cookie || "")
+      .split(";")
+      .map((chunk) => chunk.trim())
+      .filter(Boolean)
+      .map((chunk) => {
+        const [key, ...valueParts] = chunk.split("=");
+        return [key, decodeURIComponent(valueParts.join("=") || "")];
+      })
+  );
+}
+
+function getClientKey(request) {
+  const forwarded = String(request.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || request.socket.remoteAddress || "unknown";
+}
+
+function enforceRateLimit(request, bucketName) {
+  const bucket = RATE_LIMITS[bucketName];
+  if (!bucket) return null;
+
+  const key = `${bucketName}:${getClientKey(request)}`;
+  const now = Date.now();
+  const existing = rateLimitStore.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + bucket.windowMs });
+    return null;
+  }
+
+  existing.count += 1;
+  if (existing.count > bucket.limit) {
+    return {
+      error: "Too many requests",
+      details: "Please wait a moment before trying again."
+    };
+  }
+
+  return null;
+}
+
+function validateOrigin(request) {
+  if (request.method === "GET" || request.method === "OPTIONS") {
+    return null;
+  }
+
+  const origin = String(request.headers.origin || "");
+  if (!origin) {
+    return null;
+  }
+
+  const host = String(request.headers.host || "");
+
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.host !== host) {
+      return {
+        error: "Invalid origin",
+        details: "This request origin is not allowed."
+      };
+    }
+  } catch {
+    return {
+      error: "Invalid origin",
+      details: "This request origin is not allowed."
+    };
+  }
+
+  return null;
+}
+
+async function getAuthenticatedUser(request) {
+  const token = parseCookies(request)[SESSION_COOKIE];
+  if (!token) return null;
+  return getUserFromSession(token);
+}
+
+function attachCookie(response, cookieValue) {
+  response.setHeader("Set-Cookie", cookieValue);
+}
+
+function buildSessionCookie(token) {
+  const isSecure = process.env.NODE_ENV === "production";
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax${isSecure ? "; Secure" : ""}; Max-Age=${60 * 60 * 24 * 14}`;
+}
+
+function buildExpiredSessionCookie() {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
 
 async function extractResumeTextFromPayload(fileName, mimeType, base64Data) {
   const bytes = Buffer.from(base64Data, "base64");
@@ -47,8 +154,7 @@ function extractIdentityHints(text) {
     .map((line) => line.trim())
     .filter(Boolean);
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const guessedName =
-    lines.find((line) => /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line)) || "";
+  const guessedName = guessCandidateName(lines, email);
 
   return {
     guessedName,
@@ -56,36 +162,170 @@ function extractIdentityHints(text) {
   };
 }
 
+function guessCandidateName(lines, email) {
+  const noisePattern = /resume|curriculum|vitae|cv|email|phone|mobile|linkedin|github|portfolio|address|engineer|developer|analyst|scientist|manager|student|university|college|experience|education|skills|projects|profile|languages|certifications/i;
+  const fontPattern = /roboto|lato|inter|montserrat|poppins|open sans|merriweather|source sans|playfair/i;
+  const rankedCandidates = lines
+    .slice(0, 12)
+    .map((rawLine, index) => {
+      const line = rawLine.replace(/[|•·,]/g, " ").replace(/\s+/g, " ").trim();
+      if (!line || line.includes("@") || noisePattern.test(line) || fontPattern.test(line)) return null;
+      if (line.length < 4 || line.length > 48) return null;
+      if (!/^[A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){1,3}$/.test(line)) return null;
+
+      const words = line.split(/\s+/);
+      let score = 0;
+      if (words.length >= 2 && words.length <= 3) score += 4;
+      if (/^[A-Z\s.'-]+$/.test(line)) score += 5;
+      if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}$/.test(line)) score += 4;
+      if (index <= 3) score += 3;
+      if (words.every((word) => word.length > 1 && word.length < 15)) score += 2;
+
+      return { line, score };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.score - left.score);
+
+  if (rankedCandidates[0]?.line) {
+    return rankedCandidates[0].line
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  const emailPrefix = email.split("@")[0]?.replace(/[._-]+/g, " ").trim();
+  if (!emailPrefix) {
+    return "";
+  }
+
+  return emailPrefix
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function inferRoleFromDescription(jobDescription) {
+  const text = String(jobDescription || "");
+  const patterns = [
+    /\b(?:as an?|for an?|position:?|role:?)\s+([A-Z][A-Za-z /+-]*(?:Engineer|Scientist|Analyst|Developer|Manager|Consultant|Specialist))/i,
+    /\b([A-Z][A-Za-z /+-]*(?:Engineer|Scientist|Analyst|Developer|Manager|Consultant|Specialist))\b/
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      return match[1].replace(/\s+/g, " ").trim();
+    }
+  }
+
+  return "";
+}
+
+function inferCompanyFromDescription(jobDescription) {
+  const text = String(jobDescription || "");
+  const patterns = [
+    /\bat\s+([A-Z][A-Za-z0-9&.'-]+)(?:\s|,|\.|!)/,
+    /\bjoin\s+([A-Z][A-Za-z0-9&.'-]+)(?:\s|,|\.|!)/i,
+    /\bcompany:\s*([A-Z][A-Za-z0-9&.' -]+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      return match[1].replace(/\s+/g, " ").trim();
+    }
+  }
+
+  return "";
+}
+
+function normalizeRunPayload(payload) {
+  const candidate = payload?.candidate || {};
+  const target = payload?.target || {};
+  const jobDescription = String(target.jobDescription || "").trim();
+  const targetRole = String(target.targetRole || "").trim() || inferRoleFromDescription(jobDescription);
+  const companyName = String(target.companyName || "").trim() || inferCompanyFromDescription(jobDescription);
+
+  if (!String(candidate.resumeText || "").trim()) {
+    throw new Error("Upload a CV before running analysis.");
+  }
+
+  if (!jobDescription) {
+    throw new Error("Paste a job description before running analysis.");
+  }
+
+  if (!targetRole) {
+    throw new Error("Add the target role or include it clearly in the job description.");
+  }
+
+  return {
+    ...payload,
+    candidate: {
+      ...candidate,
+      name: String(candidate.name || "").trim(),
+      email: String(candidate.email || "").trim(),
+      resumeText: String(candidate.resumeText || "").trim()
+    },
+    target: {
+      ...target,
+      targetRole,
+      companyName,
+      companyWebsite: String(target.companyWebsite || "").trim(),
+      jobDescription
+    }
+  };
+}
+
 function json(response, statusCode, body) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin"
   });
   response.end(JSON.stringify(body));
 }
 
 function html(response, statusCode, body) {
   response.writeHead(statusCode, {
-    "Content-Type": "text/html; charset=utf-8"
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   });
   response.end(body);
 }
 
+function unauthorized(response) {
+  return json(response, 401, { error: "Unauthorized", details: "Please sign in to continue." });
+}
+
 async function readJsonBody(request) {
-  let rawBody = "";
+  const chunks = [];
+  let totalBytes = 0;
+  const maxBytes = 15 * 1024 * 1024;
 
   return new Promise((resolve, reject) => {
     request.on("data", (chunk) => {
-      rawBody += chunk;
-      if (rawBody.length > 2_000_000) {
-        reject(new Error("Payload too large"));
+      const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += bufferChunk.length;
+
+      if (totalBytes > maxBytes) {
+        reject(new Error("Payload too large. Please upload a smaller CV PDF or TXT file."));
+        request.destroy();
+        return;
       }
+
+      chunks.push(bufferChunk);
     });
 
     request.on("end", () => {
       try {
+        const rawBody = Buffer.concat(chunks).toString("utf8");
         resolve(JSON.parse(rawBody || "{}"));
       } catch (error) {
         reject(error);
@@ -94,6 +334,67 @@ async function readJsonBody(request) {
 
     request.on("error", reject);
   });
+}
+
+async function readRawBody(request, maxBytes = 25 * 1024 * 1024) {
+  const chunks = [];
+  let totalBytes = 0;
+
+  return new Promise((resolve, reject) => {
+    request.on("data", (chunk) => {
+      const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += bufferChunk.length;
+
+      if (totalBytes > maxBytes) {
+        reject(new Error("Payload too large. Please upload a smaller CV PDF or TXT file."));
+        request.destroy();
+        return;
+      }
+
+      chunks.push(bufferChunk);
+    });
+
+    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("error", reject);
+  });
+}
+
+function parseMultipartResumeUpload(contentType, bodyBuffer) {
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  const boundary = boundaryMatch?.[1] || boundaryMatch?.[2];
+
+  if (!boundary) {
+    throw new Error("Upload boundary missing.");
+  }
+
+  const body = bodyBuffer.toString("latin1");
+  const parts = body.split(`--${boundary}`);
+
+  for (const part of parts) {
+    if (!part.includes('name="resume"')) continue;
+
+    const headerEnd = part.indexOf("\r\n\r\n");
+    if (headerEnd === -1) continue;
+
+    const headers = part.slice(0, headerEnd);
+    const fileNameMatch = headers.match(/filename="([^"]+)"/i);
+    const mimeTypeMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
+
+    let contentStart = headerEnd + 4;
+    let contentEnd = part.lastIndexOf("\r\n");
+    if (contentEnd < contentStart) contentEnd = part.length;
+
+    const fileContent = part.slice(contentStart, contentEnd);
+    const bytes = Buffer.from(fileContent, "latin1");
+
+    return {
+      fileName: fileNameMatch?.[1] || "resume-upload",
+      mimeType: mimeTypeMatch?.[1] || "application/octet-stream",
+      bytes
+    };
+  }
+
+  throw new Error("No resume file was found in the upload.");
 }
 
 function renderConsoleApp() {
@@ -162,20 +463,73 @@ function renderConsoleApp() {
         .trace-item, .run-item { border:1px solid var(--border); border-radius:16px; padding:16px; background:rgba(255,255,255,0.02); }
         .run-list { display:grid; gap:12px; }
         .action-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+        .hidden-field { display:none; }
+        .upload-summary { margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.03); }
+        .auth-shell { display:grid; gap:20px; }
+        .auth-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+        .app-shell.hidden, .auth-shell.hidden { display:none; }
+        .user-chip { margin-top:18px; padding:12px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,0.03); }
         @media (max-width:1100px) {
           .shell { grid-template-columns:1fr; }
           .sidebar { position:static; height:auto; }
           .card.half, .card.third { grid-column:span 12; }
           .form-grid { grid-template-columns:1fr; }
+          .auth-grid { grid-template-columns:1fr; }
         }
       </style>
     </head>
     <body>
-      <div class="shell">
+      <div id="auth-shell" class="shell auth-shell">
+        <main class="panel content" style="max-width:960px;margin:0 auto;width:100%;">
+          <section class="hero">
+            <div>
+              <h1>Welcome to RoleForge</h1>
+              <p>Create a secure account to keep your CV uploads, tailored drafts, and analysis history private to you.</p>
+            </div>
+          </section>
+          <div class="auth-grid">
+            <section class="card">
+              <h2>Create account</h2>
+              <div class="form-grid">
+                <input id="signup-name" class="full" placeholder="Full name" />
+                <input id="signup-email" placeholder="Email address" />
+                <input id="signup-password" type="password" placeholder="Password" />
+              </div>
+              <div class="action-row">
+                <button id="signup-button" type="button">Create account</button>
+              </div>
+            </section>
+            <section class="card">
+              <h2>Sign in</h2>
+              <div class="form-grid">
+                <input id="login-email" placeholder="Email address" />
+                <input id="login-password" type="password" placeholder="Password" />
+              </div>
+              <div class="action-row">
+                <button id="login-button" type="button">Sign in</button>
+              </div>
+            </section>
+          </div>
+          <section class="card">
+            <h2>Private by default</h2>
+            <p>Your runs are now tied to your own account. You can only see your own uploads, tailored CV drafts, and cover letters.</p>
+            <p id="auth-status" class="muted-small">Create an account or sign in to start.</p>
+          </section>
+        </main>
+      </div>
+
+      <div id="app-shell" class="shell app-shell hidden">
         <aside class="panel sidebar">
           <p class="brand">RoleForge</p>
-          <p class="subtle">Focused mode for stronger CV tailoring and more human cover letters. We’re keeping the UI centered on one role at a time so we can improve output quality instead of spreading attention too wide.</p>
-          <div class="badge">CV + cover letter mode</div>
+          <p class="subtle">A focused workspace for improving one application at a time.</p>
+          <div class="badge">Application workspace</div>
+          <div class="user-chip">
+            <div id="user-name" style="font-weight:700;">Signed out</div>
+            <div id="user-email" class="muted-small"></div>
+            <div class="action-row" style="margin-top:10px;">
+              <button id="logout-button" class="ghost" type="button">Sign out</button>
+            </div>
+          </div>
           <h3 style="margin-top:22px;">Recent runs</h3>
           <div id="run-list" class="run-list"></div>
         </aside>
@@ -183,9 +537,9 @@ function renderConsoleApp() {
           <section class="hero">
             <div>
               <h1>Tailor your CV and cover letter</h1>
-              <p>Upload your CV, paste one job description, and get a clearer ATS view, a revised CV artifact, and a more human cover letter draft.</p>
+              <p>Upload your CV, paste a job description, and get a clearer fit score, a stronger CV draft, and a more personal cover letter.</p>
             </div>
-            <div class="badge" id="retrieval-badge">Retrieval not loaded</div>
+            <div class="badge" id="retrieval-badge" style="display:none;"></div>
           </section>
 
           <section class="card">
@@ -198,9 +552,10 @@ function renderConsoleApp() {
               <input id="company-website" class="full" placeholder="Company website (optional)" value="" />
               <div class="full">
                 <input id="resume-file" type="file" accept=".txt,.pdf" />
-                <div id="upload-status" class="muted-small" style="margin-top:8px;">Upload a .txt or .pdf CV to auto-fill resume text.</div>
+                <div id="upload-status" class="muted-small" style="margin-top:8px;">Upload a CV to fill in your details automatically.</div>
+                <div id="resume-summary" class="upload-summary muted-small">No CV loaded yet.</div>
               </div>
-              <textarea id="resume-text" class="full" placeholder="Paste resume text or upload a CV"></textarea>
+              <textarea id="resume-text" class="hidden-field" aria-hidden="true"></textarea>
               <textarea id="job-description" class="full" placeholder="Paste one job description"></textarea>
             </div>
             <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
@@ -219,12 +574,15 @@ function renderConsoleApp() {
         </main>
       </div>
       <script>
+        const authShell = document.getElementById("auth-shell");
+        const appShell = document.getElementById("app-shell");
         const runListEl = document.getElementById("run-list");
         const detailRoot = document.getElementById("detail-root");
         const runStatus = document.getElementById("run-status");
-        const retrievalBadge = document.getElementById("retrieval-badge");
         const uploadStatus = document.getElementById("upload-status");
+        const authStatus = document.getElementById("auth-status");
         let activeRunId = null;
+        let currentUser = null;
 
         function section(title, content, className = "card") {
           return \`<section class="\${className}"><h2>\${title}</h2>\${content}</section>\`;
@@ -234,8 +592,84 @@ function renderConsoleApp() {
           return '<div class="pill-row">' + (items || []).map((item) => \`<span class="pill">\${escapeHtml(item)}</span>\`).join("") + '</div>';
         }
 
+        function setAuthenticatedUser(user) {
+          currentUser = user;
+          const signedIn = Boolean(user);
+          authShell.classList.toggle("hidden", signedIn);
+          appShell.classList.toggle("hidden", !signedIn);
+          document.getElementById("user-name").textContent = user?.name || "Signed out";
+          document.getElementById("user-email").textContent = user?.email || "";
+          if (user) {
+            if (!document.getElementById("candidate-name").value) {
+              document.getElementById("candidate-name").value = user.name;
+            }
+            if (!document.getElementById("candidate-email").value) {
+              document.getElementById("candidate-email").value = user.email;
+            }
+          }
+        }
+
+        async function fetchCurrentUser() {
+          const response = await fetch("/me");
+          if (!response.ok) {
+            setAuthenticatedUser(null);
+            return null;
+          }
+
+          const payload = await response.json();
+          setAuthenticatedUser(payload.user);
+          return payload.user;
+        }
+
+        async function signUp() {
+          authStatus.textContent = "Creating your account...";
+          const response = await fetch("/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: document.getElementById("signup-name").value,
+              email: document.getElementById("signup-email").value,
+              password: document.getElementById("signup-password").value
+            })
+          });
+          const payload = await response.json();
+          authStatus.textContent = payload.details || payload.error || "Account created.";
+          if (!response.ok) return;
+          setAuthenticatedUser(payload.user);
+          await loadRuns();
+        }
+
+        async function signIn() {
+          authStatus.textContent = "Signing you in...";
+          const response = await fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("login-email").value,
+              password: document.getElementById("login-password").value
+            })
+          });
+          const payload = await response.json();
+          authStatus.textContent = payload.details || payload.error || "Signed in.";
+          if (!response.ok) return;
+          setAuthenticatedUser(payload.user);
+          await loadRuns();
+        }
+
+        async function signOut() {
+          await fetch("/logout", { method: "POST" });
+          setAuthenticatedUser(null);
+          runListEl.innerHTML = "";
+          detailRoot.innerHTML = section("Signed out", "<p>Sign back in to continue your private workspace.</p>");
+          authStatus.textContent = "Signed out.";
+        }
+
         async function loadRuns() {
           const response = await fetch("/runs");
+          if (response.status === 401) {
+            setAuthenticatedUser(null);
+            return;
+          }
           const runs = await response.json();
           runListEl.innerHTML = runs.length
             ? runs.map((run) => \`
@@ -255,8 +689,11 @@ function renderConsoleApp() {
         async function openRun(runId) {
           activeRunId = runId;
           const response = await fetch("/runs/" + runId);
+          if (response.status === 401) {
+            setAuthenticatedUser(null);
+            return;
+          }
           const run = await response.json();
-          retrievalBadge.textContent = \`Embeddings: \${run.retrieval.embeddingProvider} | Vector store: \${run.retrieval.vectorStoreStatus}\`;
           renderRunDetail(run);
           await loadRuns();
         }
@@ -273,22 +710,19 @@ function renderConsoleApp() {
               <strong>Created:</strong> \${new Date(run.createdAt).toLocaleString()}</p>
               <p class="\${approvedClass}"><strong>Recommendation:</strong> \${escapeHtml(run.review.output.finalRecommendation)}</p>
             \`),
-            section("ATS alignment", \`
-              <p><strong>Current ATS score:</strong> \${run.gap.output.atsScore}/100</p>
-              <p><strong>Target ATS score:</strong> \${run.gap.output.targetAtsScore}/100</p>
-              <p><strong>Projected ATS after CV changes:</strong> \${run.rewrite.output.projectedAtsScore}/100</p>
-              <h3>High priority fixes</h3>\${pillRow(run.gap.output.highPriorityFixes)}
+            section("Fit score", \`
+              <p><strong>Current fit:</strong> \${run.gap.output.atsScore}/100</p>
+              <p><strong>Strong target:</strong> \${run.gap.output.targetAtsScore}/100</p>
+              <p><strong>Expected after changes:</strong> \${run.rewrite.output.projectedAtsScore}/100</p>
+              <h3>Most important improvements</h3>\${pillRow(run.gap.output.highPriorityFixes)}
             \`, "card third"),
-            section("Role fit signals", \`
-              <p><strong>Seniority:</strong> \${escapeHtml(run.nlp.seniorityHint)}</p>
-              <h3>Matched skills</h3>\${pillRow(run.nlp.overlapSkills)}
-              <h3>Missing skills</h3>\${pillRow(run.nlp.missingSkills)}
-              <h3>Role themes</h3>\${pillRow(run.nlp.roleThemes)}
+            section("What already matches", \`
+              <h3>Your strongest matches</h3>\${pillRow(run.gap.output.strengths)}
+              <h3>What this role focuses on</h3>\${pillRow(run.nlp.roleThemes.length ? run.nlp.roleThemes : run.job.output.businessNeeds)}
             \`, "card third"),
-            section("Application strategy", \`
-              <p><strong>Embedding provider:</strong> \${escapeHtml(run.retrieval.embeddingProvider)} | <strong>Vector store:</strong> \${escapeHtml(run.retrieval.vectorStoreStatus)}</p>
-              <h3>Strengths</h3>\${pillRow(run.gap.output.strengths)}
+            section("What to improve", \`
               <h3>Focus areas</h3>\${pillRow(run.gap.output.focusAreas)}
+              <h3>Missing pieces</h3>\${pillRow(run.gap.output.gaps)}
               <ul>\${run.gap.output.applicationStrategy.map((item) => \`<li>\${escapeHtml(item)}</li>\`).join("")}</ul>
             \`, "card third"),
             section("Cover letter", \`<pre id="cover-letter-output">\${escapeHtml(finalCoverLetter)}</pre>
@@ -296,7 +730,7 @@ function renderConsoleApp() {
                 <button type="button" onclick="copyText('cover-letter-output')">Copy cover letter</button>
                 <button type="button" class="ghost" onclick="downloadText('cover-letter-output', 'roleforge-cover-letter.txt')">Download cover letter</button>
               </div>\`, "card half"),
-            section("Revised CV artifact", \`<pre id="resume-artifact-output">\${escapeHtml(finalResumeArtifact)}</pre>
+            section("Improved CV draft", \`<pre id="resume-artifact-output">\${escapeHtml(finalResumeArtifact)}</pre>
               <div class="action-row">
                 <button type="button" onclick="copyText('resume-artifact-output')">Copy CV draft</button>
                 <button type="button" class="ghost" onclick="downloadText('resume-artifact-output', 'roleforge-revised-cv.md')">Download CV draft</button>
@@ -319,6 +753,7 @@ function renderConsoleApp() {
         }
 
         function buildPayload() {
+          const jobDescription = document.getElementById("job-description").value;
           return {
             candidate: {
               name: document.getElementById("candidate-name").value,
@@ -326,21 +761,67 @@ function renderConsoleApp() {
               resumeText: document.getElementById("resume-text").value
             },
             target: {
-              targetRole: document.getElementById("target-role").value,
-              companyName: document.getElementById("company-name").value,
+              targetRole: document.getElementById("target-role").value || inferRoleFromJobDescription(jobDescription),
+              companyName: document.getElementById("company-name").value || inferCompanyFromJobDescription(jobDescription),
               companyWebsite: document.getElementById("company-website").value,
-              jobDescription: document.getElementById("job-description").value
+              jobDescription
             }
           };
         }
 
+        function inferRoleFromJobDescription(text) {
+          const patterns = [
+            /\\b(?:as an?|for an?|position:?|role:?)\\s+([A-Z][A-Za-z /+-]*(?:Engineer|Scientist|Analyst|Developer|Manager|Consultant|Specialist))/i,
+            /\\b([A-Z][A-Za-z /+-]*(?:Engineer|Scientist|Analyst|Developer|Manager|Consultant|Specialist))\\b/
+          ];
+          for (const pattern of patterns) {
+            const match = String(text || "").match(pattern);
+            if (match?.[1]) return match[1].replace(/\\s+/g, " ").trim();
+          }
+          return "";
+        }
+
+        function inferCompanyFromJobDescription(text) {
+          const patterns = [
+            /\\bat\\s+([A-Z][A-Za-z0-9&.'-]+)(?:\\s|,|\\.|!)/,
+            /\\bjoin\\s+([A-Z][A-Za-z0-9&.'-]+)(?:\\s|,|\\.|!)/i,
+            /\\bcompany:\\s*([A-Z][A-Za-z0-9&.' -]+)/i
+          ];
+          for (const pattern of patterns) {
+            const match = String(text || "").match(pattern);
+            if (match?.[1]) return match[1].replace(/\\s+/g, " ").trim();
+          }
+          return "";
+        }
+
+        function validatePayload(payload) {
+          if (!payload.candidate.resumeText.trim()) return "Upload a CV before running analysis.";
+          if (!payload.target.jobDescription.trim()) return "Paste a job description before running analysis.";
+          if (!payload.target.targetRole.trim()) return "Add the target role or include it clearly in the job description.";
+          return "";
+        }
+
         async function submitRun() {
+          const payload = buildPayload();
+          const validationError = validatePayload(payload);
+          if (validationError) {
+            runStatus.textContent = validationError;
+            detailRoot.innerHTML = section("Missing information", \`<p>\${escapeHtml(validationError)}</p>\`);
+            return;
+          }
+          document.getElementById("target-role").value = payload.target.targetRole;
+          if (payload.target.companyName) document.getElementById("company-name").value = payload.target.companyName;
           runStatus.textContent = "Running agents...";
           const response = await fetch("/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(buildPayload())
+            body: JSON.stringify(payload)
           });
+          if (response.status === 401) {
+            setAuthenticatedUser(null);
+            runStatus.textContent = "Please sign in again.";
+            return;
+          }
           const run = await response.json();
           if (!response.ok) {
             runStatus.textContent = run.error || "Run failed.";
@@ -349,20 +830,19 @@ function renderConsoleApp() {
           }
           runStatus.textContent = "Run completed.";
           activeRunId = run.id;
-          retrievalBadge.textContent = \`Embeddings: \${run.retrieval.embeddingProvider} | Vector store: \${run.retrieval.vectorStoreStatus}\`;
           renderRunDetail(run);
           await loadRuns();
         }
 
         function resetComposer() {
           activeRunId = null;
-          retrievalBadge.textContent = "Retrieval not loaded";
           runStatus.textContent = "Ready.";
           ["candidate-name","candidate-email","target-role","company-name","company-website","resume-text","job-description"].forEach((id) => {
             document.getElementById(id).value = "";
           });
           document.getElementById("resume-file").value = "";
-          uploadStatus.textContent = "Upload a .txt or .pdf CV to auto-fill resume text.";
+          uploadStatus.textContent = "Upload a CV to fill in your details automatically.";
+          document.getElementById("resume-summary").textContent = "No CV loaded yet.";
           detailRoot.innerHTML = section("Fresh workspace", "<p>The form is reset. Recent runs stay in the sidebar, but nothing is carried into your new request automatically.</p>");
         }
 
@@ -370,16 +850,17 @@ function renderConsoleApp() {
           const file = event.target.files?.[0];
           if (!file) return;
           uploadStatus.textContent = "Reading resume...";
-          const buffer = await file.arrayBuffer();
-          const bytes = new Uint8Array(buffer);
-          let binary = "";
-          for (const byte of bytes) binary += String.fromCharCode(byte);
-          const base64 = btoa(binary);
+          const formData = new FormData();
+          formData.append("resume", file);
           const response = await fetch("/upload-resume", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fileName: file.name, mimeType: file.type, base64 })
+            body: formData
           });
+          if (response.status === 401) {
+            setAuthenticatedUser(null);
+            uploadStatus.textContent = "Please sign in again.";
+            return;
+          }
           const payload = await response.json();
           if (!response.ok) {
             uploadStatus.textContent = payload.details || payload.error || "Upload failed.";
@@ -388,7 +869,10 @@ function renderConsoleApp() {
           document.getElementById("resume-text").value = payload.text || "";
           if (payload.guessedName) document.getElementById("candidate-name").value = payload.guessedName;
           if (payload.email) document.getElementById("candidate-email").value = payload.email;
-          uploadStatus.textContent = \`Loaded \${file.name} from \${payload.source} input.\`;
+          uploadStatus.textContent = \`Loaded \${file.name}.\`;
+          const wordCount = (payload.text || "").split(/\\s+/).filter(Boolean).length;
+          document.getElementById("resume-summary").textContent =
+            \`\${file.name} loaded. Extracted \${wordCount} words\${payload.guessedName ? \`, detected \${payload.guessedName}\` : ""}\${payload.email ? \`, detected \${payload.email}\` : ""}.\`;
         }
 
         function escapeHtml(value) {
@@ -421,7 +905,19 @@ function renderConsoleApp() {
         document.getElementById("run-button").addEventListener("click", submitRun);
         document.getElementById("new-analysis-button").addEventListener("click", resetComposer);
         document.getElementById("resume-file").addEventListener("change", handleResumeUpload);
-        loadRuns();
+        document.getElementById("signup-button").addEventListener("click", signUp);
+        document.getElementById("login-button").addEventListener("click", signIn);
+        document.getElementById("logout-button").addEventListener("click", signOut);
+
+        async function bootstrap() {
+          const user = await fetchCurrentUser();
+          if (user) {
+            authStatus.textContent = "";
+            await loadRuns();
+          }
+        }
+
+        bootstrap();
       </script>
     </body>
   </html>`;
@@ -475,6 +971,13 @@ const server = http.createServer(async (request, response) => {
     return json(response, 404, { error: "Not found" });
   }
 
+  const originError = validateOrigin(request);
+  if (originError) {
+    return json(response, 403, originError);
+  }
+
+  const authenticatedUser = await getAuthenticatedUser(request);
+
   if (request.method === "OPTIONS") {
     return json(response, 200, { ok: true });
   }
@@ -483,12 +986,69 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, { status: "ok" });
   }
 
+  if (request.method === "GET" && request.url === "/ready") {
+    return json(response, 200, { status: "ready" });
+  }
+
   if (request.method === "GET" && request.url === "/") {
     return html(response, 200, renderConsoleApp());
   }
 
+  if (request.method === "GET" && request.url === "/me") {
+    if (!authenticatedUser) {
+      return unauthorized(response);
+    }
+    return json(response, 200, { user: authenticatedUser });
+  }
+
+  if (request.method === "POST" && request.url === "/signup") {
+    const limited = enforceRateLimit(request, "auth");
+    if (limited) return json(response, 429, limited);
+    try {
+      const payload = await readJsonBody(request);
+      const user = await registerUser(payload.name, payload.email, payload.password);
+      const token = await createSession(user.id);
+      attachCookie(response, buildSessionCookie(token));
+      return json(response, 200, { user, details: "Account created. You are now signed in." });
+    } catch (error) {
+      return json(response, 400, {
+        error: "Sign-up failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  if (request.method === "POST" && request.url === "/login") {
+    const limited = enforceRateLimit(request, "auth");
+    if (limited) return json(response, 429, limited);
+    try {
+      const payload = await readJsonBody(request);
+      const user = await authenticateUser(payload.email, payload.password);
+      const token = await createSession(user.id);
+      attachCookie(response, buildSessionCookie(token));
+      return json(response, 200, { user, details: "Signed in successfully." });
+    } catch (error) {
+      return json(response, 400, {
+        error: "Sign-in failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  if (request.method === "POST" && request.url === "/logout") {
+    const token = parseCookies(request)[SESSION_COOKIE];
+    await revokeSession(token);
+    attachCookie(response, buildExpiredSessionCookie());
+    return json(response, 200, { ok: true });
+  }
+
   if (request.method === "GET" && request.url === "/runs") {
-    return json(response, 200, await listRuns());
+    const limited = enforceRateLimit(request, "read");
+    if (limited) return json(response, 429, limited);
+    if (!authenticatedUser) {
+      return unauthorized(response);
+    }
+    return json(response, 200, await listRuns(authenticatedUser.id));
   }
 
   if (request.method === "GET" && request.url === "/console") {
@@ -496,25 +1056,46 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === "GET" && request.url.startsWith("/runs/")) {
+    const limited = enforceRateLimit(request, "read");
+    if (limited) return json(response, 429, limited);
+    if (!authenticatedUser) {
+      return unauthorized(response);
+    }
     try {
-      return json(response, 200, await loadRun(request.url.split("/").pop() || ""));
+      return json(response, 200, await loadRun(request.url.split("/").pop() || "", authenticatedUser.id));
     } catch (error) {
       return json(response, 404, { error: "Run not found", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 
   if (request.method === "GET" && request.url.startsWith("/console/")) {
+    if (!authenticatedUser) {
+      return html(response, 401, `<h1>Sign in required</h1><p>Please return to the main app and sign in.</p>`);
+    }
     try {
-      return html(response, 200, renderRunDetail(await loadRun(request.url.split("/").pop() || "")));
+      return html(response, 200, renderRunDetail(await loadRun(request.url.split("/").pop() || "", authenticatedUser.id)));
     } catch (error) {
       return html(response, 404, `<h1>Run not found</h1><p>${escapeHtml(error instanceof Error ? error.message : "Unknown error")}</p>`);
     }
   }
 
   if (request.method === "POST" && request.url === "/run") {
+    const limited = enforceRateLimit(request, "run");
+    if (limited) return json(response, 429, limited);
+    if (!authenticatedUser) {
+      return unauthorized(response);
+    }
     try {
       const payload = await readJsonBody(request);
-      const result = await runRoleForge(payload);
+      const normalized = normalizeRunPayload(payload);
+      const result = await runRoleForge({
+        ...normalized,
+        auth: {
+          userId: authenticatedUser.id,
+          email: authenticatedUser.email,
+          name: authenticatedUser.name
+        }
+      });
       return json(response, 200, result);
     } catch (error) {
       return json(response, 400, {
@@ -525,13 +1106,32 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === "POST" && request.url === "/upload-resume") {
+    const limited = enforceRateLimit(request, "upload");
+    if (limited) return json(response, 429, limited);
+    if (!authenticatedUser) {
+      return unauthorized(response);
+    }
     try {
-      const payload = await readJsonBody(request);
-      const result = await extractResumeTextFromPayload(
-        payload.fileName,
-        payload.mimeType,
-        payload.base64
-      );
+      const contentType = String(request.headers["content-type"] || "");
+      let result;
+
+      if (contentType.includes("multipart/form-data")) {
+        const bodyBuffer = await readRawBody(request);
+        const upload = parseMultipartResumeUpload(contentType, bodyBuffer);
+        result = await extractResumeTextFromPayload(
+          upload.fileName,
+          upload.mimeType,
+          upload.bytes.toString("base64")
+        );
+      } else {
+        const payload = await readJsonBody(request);
+        result = await extractResumeTextFromPayload(
+          payload.fileName,
+          payload.mimeType,
+          payload.base64
+        );
+      }
+
       return json(response, 200, result);
     } catch (error) {
       return json(response, 400, {

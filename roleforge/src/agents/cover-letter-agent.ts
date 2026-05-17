@@ -60,8 +60,10 @@ export async function runCoverLetterAgent(
     `Alignment with ${businessNeed}`
   ];
   const evidenceOne = resume.evidenceLines[0] ?? resume.candidateHeadline;
-  const evidenceTwo = resume.evidenceLines[1] ?? "";
-  const roleSignal = research.latestSignals[0] ?? job.businessNeeds[0] ?? businessNeed;
+  const evidenceTwo =
+    resume.evidenceLines.find((line, index) => index > 0 && line !== evidenceOne) ?? "";
+  const roleSignal = job.businessNeeds[0] ?? businessNeed;
+  const safeCompanySummary = /placeholder/i.test(research.companySummary) ? "" : research.companySummary;
   const fallbackLetter = [
     `Dear Hiring Team at ${company},`,
     "",
@@ -69,7 +71,7 @@ export async function runCoverLetterAgent(
     "",
     `In my own work, I already have a strong starting point in ${firstStrength}. ${evidenceOne} ${evidenceTwo ? `${evidenceTwo} ` : ""}That gives me a solid base to contribute quickly while continuing to deepen the areas your team seems to care about most, especially ${firstGap}.`,
     "",
-    `${research.companySummary ? `${research.companySummary} ` : ""}That context makes the role even more interesting to me, because I want to work in an environment where ${roleSignal} actually matters to product decisions. I’d be excited to bring a thoughtful, hands-on approach and keep building stronger evidence at that level.`,
+    `${safeCompanySummary ? `${safeCompanySummary} ` : ""}That context makes the role even more interesting to me, because I want to work in an environment where ${roleSignal} clearly matters to product decisions. I’d be excited to bring a thoughtful, hands-on approach and keep building stronger evidence at that level.`,
     "",
     "Sincerely,",
     context.candidate.name || ""
