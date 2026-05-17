@@ -189,6 +189,41 @@ Important ones:
 - vector search: `pgvector`
 - file storage: `Supabase Storage`
 
+## Start deployment now
+
+The fastest first deployment for the current code is **Render**.
+
+### Render steps
+
+1. Go to [Render Dashboard](https://dashboard.render.com/)
+2. Click `New` -> `Blueprint`
+3. Connect this GitHub repo:
+   - [https://github.com/kabirthecoder/ai-job-copilot](https://github.com/kabirthecoder/ai-job-copilot)
+4. Render should detect:
+   - `roleforge/render.yaml`
+5. Confirm the service creation
+6. Add your secret:
+   - `OPENAI_API_KEY`
+7. Deploy
+
+### What Render will use
+
+- root directory: `roleforge`
+- build command: `npm install && npm run build`
+- start command: `npm run start`
+- health check path: `/health`
+- production env defaults from `roleforge/render.yaml`
+
+### First hosted deployment expectation
+
+This first deployment is best used as:
+
+- private beta
+- portfolio demo
+- early hosted testing
+
+It is not yet the final public production setup because users, sessions, runs, and vectors still live in local JSON storage on the service instance.
+
 ## Production readiness
 
 RoleForge is now a strong **pre-production** app, but not yet a full public production deployment.

@@ -5,11 +5,18 @@ services:
     rootDir: roleforge
     buildCommand: npm install && npm run build
     startCommand: npm run start
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: ROLEFORGE_PROVIDER
         value: openai
       - key: ROLEFORGE_OPENAI_MODEL
         value: gpt-5.4-mini
+      - key: ROLEFORGE_EMBEDDING_PROVIDER
+        value: openai
+      - key: ROLEFORGE_OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
       - key: ROLEFORGE_AGENT_TIMEOUT_MS
         value: "20000"

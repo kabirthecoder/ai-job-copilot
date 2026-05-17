@@ -11,7 +11,7 @@ import {
 import { runRoleForge } from "./dist/orchestrator.js";
 import { listRuns, loadRun } from "./dist/persistence.js";
 
-const port = Number(process.env.ROLEFORGE_PORT || 8787);
+const port = Number(process.env.ROLEFORGE_PORT || process.env.PORT || 8787);
 const SESSION_COOKIE = "roleforge_session";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMITS = {
