@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Medicine Detector — AI Counterfeit Scanner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --border: #1f2937;
+      --text: #f1f5f9;
+      --muted: #6b7280;
+      --accent: #3b82f6;
+      --accent-dim: #1d4ed820;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --red-dim: #7f1d1d30;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .logo { font-size: 1.5rem; }
+    .header-text h1 { font-size: 1rem; font-weight: 700; }
+    .header-text p { font-size: 0.75rem; color: var(--muted); }
+    .live-badge {
+      margin-left: auto;
+      background: #10b98120;
+      color: var(--green);
+      border: 1px solid #10b98140;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── LAYOUT ── */
+    main { max-width: 640px; margin: 0 auto; padding: 1.25rem; }
+
+    .hero {
+      text-align: center;
+      padding: 1.5rem 0 1.25rem;
+    }
+    .hero h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.3; }
+    .hero p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+    .source-badges {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-top: 0.875rem;
+    }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      padding: 0.25rem 0.6rem;
+      color: var(--muted);
+    }
+    .badge strong { color: var(--text); }
+
+    /* ── UPLOAD CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 0.75rem;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .upload-zone h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .upload-zone p { font-size: 0.8rem; color: var(--muted); }
+
+    .camera-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .cam-btn {
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 0.875rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+    .cam-btn input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .cam-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+    .cam-btn .icon { font-size: 1.5rem; display: block; margin-bottom: 0.25rem; }
+    .cam-btn span { font-size: 0.8rem; color: var(--muted); display: block; }
+    .cam-btn strong { font-size: 0.85rem; display: block; }
+
+    /* ── PREVIEW ── */
+    #preview-wrap { display: none; margin-top: 1rem; }
+    #preview-img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+    }
+    .preview-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .btn-primary {
+      flex: 1;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 0.65rem;
+      padding: 0.875rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 0.65rem;
+      padding: 0.875rem 1rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ── LOADING ── */
+    #loading { display: none; text-align: center; padding: 2rem 1rem; }
+    .spinner-ring {
+      width: 3rem; height: 3rem;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-weight: 600; margin-bottom: 0.5rem; }
+    .steps { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; text-align: left; }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.4rem;
+      transition: all 0.3s;
+    }
+    .step.active { background: var(--accent-dim); color: #93c5fd; }
+    .step.done { color: var(--green); }
+    .step-icon { width: 1.2rem; text-align: center; flex-shrink: 0; }
+
+    /* ── ERROR ── */
+    .error-box {
+      background: var(--red-dim);
+      border: 1px solid #ef444440;
+      border-radius: 0.65rem;
+      padding: 0.875rem 1rem;
+      color: #fca5a5;
+      font-size: 0.875rem;
+      display: none;
+      margin-top: 0.75rem;
+    }
+
+    /* ── RESULTS ── */
+    #results { display: none; }
+
+    /* Verdict banner */
+    .verdict-banner {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .verdict-banner.authentic    { background: #052e16; border: 1px solid #166534; }
+    .verdict-banner.suspicious   { background: #451a03; border: 1px solid #92400e; }
+    .verdict-banner.counterfeit  { background: #450a0a; border: 1px solid #991b1b; }
+
+    .verdict-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .verdict-score-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 4px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .verdict-label {
+      font-size: 1.4rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    .verdict-confidence {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-bottom: 0.75rem;
+    }
+    .verdict-action {
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255,255,255,0.1);
+      display: inline-block;
+      line-height: 1.4;
+    }
+
+    /* Section titles */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Drug info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .info-item {
+      background: var(--bg);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.75rem;
+    }
+    .info-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.15rem; }
+    .info-value { font-size: 0.875rem; font-weight: 500; word-break: break-word; }
+    .info-item.full { grid-column: 1 / -1; }
+
+    /* WHO Alert */
+    .who-alert-box {
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      border-radius: 0.65rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .who-alert-box h4 {
+      color: #fca5a5;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .who-alert-box p { font-size: 0.825rem; color: #fca5a5; line-height: 1.5; opacity: 0.85; }
+    .who-alert-box .alert-meta {
+      font-size: 0.75rem;
+      color: #f87171;
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* Red flags */
+    .flags-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .flag {
+      display: flex;
+      gap: 0.625rem;
+      align-items: flex-start;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    .flag.critical { background: #450a0a; color: #fca5a5; }
+    .flag.high     { background: #431407; color: #fdba74; }
+    .flag.medium   { background: #3f2a0f; color: #fcd34d; }
+    .flag.low      { background: #0c1a2e; color: #93c5fd; }
+    .flag-icon { flex-shrink: 0; margin-top: 0.1rem; }
+
+    /* Positive signals */
+    .positives-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .positive {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #86efac;
+      line-height: 1.4;
+    }
+    .positive::before { content: "✓"; color: var(--green); flex-shrink: 0; }
+
+    /* Explanation */
+    .explanation {
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+    }
+
+    /* Guidance */
+    .guidance-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .guidance-item {
+      display: flex;
+      gap: 0.625rem;
+      align-items: flex-start;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #93c5fd;
+    }
+    .guidance-item::before { content: "→"; color: var(--accent); flex-shrink: 0; }
+
+    /* FDA status pill */
+    .fda-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+    .fda-verified  { background: #052e16; color: var(--green); border: 1px solid #166534; }
+    .fda-recalled  { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+    .fda-not-found { background: #1c1917; color: var(--muted); border: 1px solid #44403c; }
+
+    /* Visual score bar */
+    .score-bar-wrap { margin-top: 0.25rem; }
+    .score-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 9999px;
+      margin-top: 0.4rem;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 1s ease;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.6;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 0.875rem;
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 480px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .camera-btns { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💊</div>
+  <div class="header-text">
+    <h1>Medicine Detector</h1>
+    <p>AI-powered counterfeit scanner</p>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span>Live</div>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>Is Your Medicine Real?</h2>
+    <p>Take a photo or upload your medicine packaging. Our AI cross-checks against FDA drug records, WHO counterfeit alerts, and performs visual forensic analysis.</p>
+    <div class="source-badges">
+      <span class="badge"><strong>FDA</strong> Drug Database</span>
+      <span class="badge"><strong>WHO</strong> Medical Alerts</span>
+      <span class="badge"><strong>AI</strong> Visual Forensics</span>
+      <span class="badge"><strong>Claude</strong> Vision</span>
+    </div>
+  </div>
+
+  <!-- Upload Card -->
+  <div class="card">
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*" />
+      <div class="upload-icon">📷</div>
+      <h3>Drop medicine photo here</h3>
+      <p>or use the buttons below</p>
+    </div>
+
+    <div class="camera-btns">
+      <label class="cam-btn">
+        <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+        <span class="icon">📸</span>
+        <strong>Take Photo</strong>
+        <span>Use camera</span>
+      </label>
+      <label class="cam-btn">
+        <input type="file" accept="image/*" id="galleryInput" />
+        <span class="icon">🖼️</span>
+        <strong>Upload Image</strong>
+        <span>From gallery</span>
+      </label>
+    </div>
+
+    <div id="preview-wrap">
+      <img id="preview-img" alt="Medicine packaging preview" />
+      <div class="preview-actions">
+        <button class="btn-primary" id="analyzeBtn" onclick="submitAnalysis()">
+          🔍 Analyze Medicine
+        </button>
+        <button class="btn-secondary" onclick="clearImage()">✕</button>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="card">
+    <div class="spinner-ring"></div>
+    <div class="loading-title">Analyzing packaging...</div>
+    <div class="steps">
+      <div class="step" id="s1"><span class="step-icon">🔎</span> Extracting text & details from image</div>
+      <div class="step" id="s2"><span class="step-icon">💊</span> Checking FDA drug database</div>
+      <div class="step" id="s3"><span class="step-icon">🌍</span> Cross-referencing WHO counterfeit alerts</div>
+      <div class="step" id="s4"><span class="step-icon">🔬</span> Running visual forensic analysis</div>
+      <div class="step" id="s5"><span class="step-icon">⚖️</span> Generating authenticity verdict</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Verdict Banner -->
+    <div class="verdict-banner" id="verdictBanner">
+      <div class="verdict-score-ring" id="scoreRing"></div>
+      <div class="verdict-label" id="verdictLabel"></div>
+      <div class="verdict-confidence" id="verdictConf"></div>
+      <div class="verdict-action" id="verdictAction"></div>
+    </div>
+
+    <!-- WHO Alert (shown only if matched) -->
+    <div class="who-alert-box" id="whoAlertBox" style="display:none">
+      <h4>⚠️ WHO Medical Product Alert Match</h4>
+      <p id="whoAlertDesc"></p>
+      <div class="alert-meta" id="whoAlertMeta"></div>
+    </div>
+
+    <!-- Drug Info -->
+    <div class="card">
+      <div class="section-label">Detected Product</div>
+      <div class="info-grid" id="drugInfoGrid"></div>
+      <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <span style="font-size:0.75rem; color:var(--muted)">FDA Status:</span>
+        <span class="fda-pill" id="fdaPill"></span>
+      </div>
+    </div>
+
+    <!-- Visual Analysis -->
+    <div class="card">
+      <div class="section-label">Visual Forensic Analysis</div>
+      <div class="score-bar-wrap">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+          <span>Print Quality</span>
+          <span id="printScoreLabel"></span>
+        </div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" id="printScoreBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;" id="visualDetails"></div>
+    </div>
+
+    <!-- Red Flags -->
+    <div class="card" id="redFlagsCard">
+      <div class="section-label">Red Flags</div>
+      <div class="flags-list" id="flagsList"></div>
+    </div>
+
+    <!-- Positive Signals -->
+    <div class="card" id="positivesCard" style="display:none">
+      <div class="section-label">Positive Signals</div>
+      <div class="positives-list" id="positivesList"></div>
+    </div>
+
+    <!-- Explanation -->
+    <div class="card">
+      <div class="section-label">Detailed Analysis</div>
+      <div class="explanation" id="explanationBox"></div>
+    </div>
+
+    <!-- Verification Guidance -->
+    <div class="card">
+      <div class="section-label">What To Do Now</div>
+      <div class="guidance-list" id="guidanceList"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer" id="disclaimerBox"></div>
+
+    <div style="text-align:center; margin-top:1.5rem;">
+      <button class="btn-secondary" onclick="clearImage(); document.getElementById('results').style.display='none'; window.scrollTo({top:0,behavior:'smooth'})">
+        Analyze Another Medicine
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+  let selectedFile = null;
+  let stepTimer = null;
+  let currentStep = 0;
+
+  // Wire all three inputs to the same handler
+  ["fileInput", "cameraInput", "galleryInput"].forEach(id => {
+    document.getElementById(id).addEventListener("change", e => {
+      const file = e.target.files?.[0];
+      if (file) handleFile(file);
+    });
+  });
+
+  // Drag & drop
+  const zone = document.getElementById("uploadZone");
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith("image/")) handleFile(file);
+  });
+
+  function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById("preview-img").src = e.target.result;
+      document.getElementById("preview-wrap").style.display = "block";
+      document.getElementById("results").style.display = "none";
+      document.getElementById("errorBox").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    selectedFile = null;
+    document.getElementById("preview-wrap").style.display = "none";
+    document.getElementById("preview-img").src = "";
+    ["fileInput","cameraInput","galleryInput"].forEach(id => document.getElementById(id).value = "");
+  }
+
+  function animateSteps() {
+    const steps = ["s1","s2","s3","s4","s5"];
+    currentStep = 0;
+    steps.forEach(id => document.getElementById(id).className = "step");
+    stepTimer = setInterval(() => {
+      if (currentStep > 0) document.getElementById(steps[currentStep-1]).className = "step done";
+      if (currentStep < steps.length) {
+        document.getElementById(steps[currentStep]).className = "step active";
+        currentStep++;
+      } else clearInterval(stepTimer);
+    }, 2200);
+  }
+
+  async function submitAnalysis() {
+    if (!selectedFile) return;
+    const btn = document.getElementById("analyzeBtn");
+    const errorBox = document.getElementById("errorBox");
+    errorBox.style.display = "none";
+    document.getElementById("results").style.display = "none";
+
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
+    btn.disabled = true;
+    document.getElementById("loading").style.display = "block";
+    animateSteps();
+
+    try {
+      const res = await fetch("/api/analyze", { method: "POST", body: formData });
+      const data = await res.json();
+
+      clearInterval(stepTimer);
+      ["s1","s2","s3","s4","s5"].forEach(id => document.getElementById(id).className = "step done");
+
+      if (!res.ok || !data.success) throw new Error(data.error || "Analysis failed");
+
+      renderResults(data.result);
+    } catch (err) {
+      clearInterval(stepTimer);
+      errorBox.textContent = err.message;
+      errorBox.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      document.getElementById("loading").style.display = "none";
+    }
+  }
+
+  function verdictClass(verdict) {
+    if (verdict === "authentic" || verdict === "likely-authentic") return "authentic";
+    if (verdict === "suspicious") return "suspicious";
+    return "counterfeit";
+  }
+
+  function verdictIcon(verdict) {
+    const icons = { authentic: "✅", "likely-authentic": "✅", suspicious: "⚠️", "likely-counterfeit": "🚨", counterfeit: "🚫" };
+    return icons[verdict] || "❓";
+  }
+
+  function scoreColor(score) {
+    if (score >= 70) return "var(--green)";
+    if (score >= 45) return "var(--yellow)";
+    return "var(--red)";
+  }
+
+  function flagIcon(severity) {
+    return { critical: "🚫", high: "⚠️", medium: "⚡", low: "ℹ️" }[severity] || "•";
+  }
+
+  function renderResults(r) {
+    const { packaging, fdaRecord, whoAlertMatch, visualAnalysis, verdict, verificationGuidance, disclaimer } = r;
+
+    // Verdict banner
+    const vc = verdictClass(verdict.verdict);
+    const banner = document.getElementById("verdictBanner");
+    banner.className = `verdict-banner ${vc}`;
+    const color = scoreColor(verdict.score);
+    document.getElementById("scoreRing").innerHTML = verdict.score;
+    document.getElementById("scoreRing").style.color = color;
+    document.getElementById("scoreRing").style.borderColor = color;
+    document.getElementById("verdictLabel").textContent = verdict.verdict.replace(/-/g," ");
+    document.getElementById("verdictLabel").style.color = color;
+    document.getElementById("verdictConf").textContent = `Confidence: ${verdict.confidence}`;
+    document.getElementById("verdictAction").textContent = verdict.immediateAction;
+
+    // WHO Alert
+    if (whoAlertMatch) {
+      document.getElementById("whoAlertBox").style.display = "block";
+      document.getElementById("whoAlertDesc").textContent = whoAlertMatch.description;
+      document.getElementById("whoAlertMeta").innerHTML =
+        `<span>Alert: ${whoAlertMatch.id}</span><span>Date: ${whoAlertMatch.alertDate}</span><span>Type: ${whoAlertMatch.alertType}</span>`;
+    } else {
+      document.getElementById("whoAlertBox").style.display = "none";
+    }
+
+    // Drug info grid
+    const fields = [
+      ["Drug Name", packaging.drugName],
+      ["Manufacturer", packaging.manufacturer],
+      ["Batch Number", packaging.batchNumber || "Not detected"],
+      ["Expiry Date", packaging.expiryDate || "Not detected"],
+      ["Strength", packaging.strength || "Not detected"],
+      ["Country", packaging.countryOfOrigin || "Not detected"],
+      ["Reg. Number", packaging.registrationNumber || "Not detected"],
+      ["Dosage Form", packaging.dosageForm || "Not detected"],
+    ];
+    document.getElementById("drugInfoGrid").innerHTML = fields.map(([label, val]) => `
+      <div class="info-item">
+        <div class="info-label">${label}</div>
+        <div class="info-value">${val}</div>
+      </div>
+    `).join("");
+
+    // FDA pill
+    const fdaEl = document.getElementById("fdaPill");
+    if (fdaRecord.hasRecalls) {
+      fdaEl.className = "fda-pill fda-recalled";
+      fdaEl.textContent = "⚠ Active Recall";
+    } else if (fdaRecord.found) {
+      fdaEl.className = "fda-pill fda-verified";
+      fdaEl.textContent = "✓ Found in FDA Database";
+    } else {
+      fdaEl.className = "fda-pill fda-not-found";
+      fdaEl.textContent = "Not found in FDA database";
+    }
+
+    // Visual score bar
+    const ps = visualAnalysis.printQualityScore;
+    document.getElementById("printScoreLabel").textContent = `${ps}/100`;
+    const bar = document.getElementById("printScoreBar");
+    bar.style.width = ps + "%";
+    bar.style.background = scoreColor(ps);
+
+    // Visual details
+    const va = visualAnalysis;
+    const details = [];
+    if (va.spellingErrors.length) details.push(`<p style="font-size:0.825rem;color:#fca5a5;margin-bottom:0.35rem">⚠ Spelling errors: ${va.spellingErrors.join("; ")}</p>`);
+    if (va.fontInconsistencies.length) details.push(`<p style="font-size:0.825rem;color:#fdba74;margin-bottom:0.35rem">⚡ Font issues: ${va.fontInconsistencies.join("; ")}</p>`);
+    if (va.authenticElements.length) details.push(`<p style="font-size:0.825rem;color:#86efac;margin-bottom:0.35rem">✓ Security features: ${va.authenticElements.join(", ")}</p>`);
+    document.getElementById("visualDetails").innerHTML = details.join("") || `<p style="font-size:0.825rem;color:var(--muted)">No notable visual anomalies detected.</p>`;
+
+    // Red flags
+    const flagsList = document.getElementById("flagsList");
+    if (verdict.redFlags.length === 0) {
+      document.getElementById("redFlagsCard").style.display = "none";
+    } else {
+      document.getElementById("redFlagsCard").style.display = "block";
+      flagsList.innerHTML = verdict.redFlags.map(f => `
+        <div class="flag ${f.severity}">
+          <span class="flag-icon">${flagIcon(f.severity)}</span>
+          <span>${f.description}</span>
+        </div>
+      `).join("");
+    }
+
+    // Positive signals
+    if (verdict.positiveSignals.length > 0) {
+      document.getElementById("positivesCard").style.display = "block";
+      document.getElementById("positivesList").innerHTML = verdict.positiveSignals
+        .map(s => `<div class="positive">${s}</div>`).join("");
+    } else {
+      document.getElementById("positivesCard").style.display = "none";
+    }
+
+    // Explanation
+    document.getElementById("explanationBox").textContent = verdict.detailedExplanation;
+
+    // Guidance
+    document.getElementById("guidanceList").innerHTML = verificationGuidance
+      .map(g => `<div class="guidance-item">${g}</div>`).join("");
+
+    // Disclaimer
+    document.getElementById("disclaimerBox").textContent = disclaimer;
+
+    // Show results
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+  }
+</script>
+</body>
+</html>
