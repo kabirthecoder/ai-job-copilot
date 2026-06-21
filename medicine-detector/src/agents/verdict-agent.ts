@@ -4,16 +4,18 @@ import type {
   VisualAnalysis, AuthenticityVerdict, RedFlag,
 } from "../types.js";
 
-const SYSTEM = `You are a senior pharmaceutical forensics expert making a final authenticity determination.
+const BASE_SYSTEM = `You are a senior pharmaceutical forensics expert making a final authenticity determination.
 You synthesize evidence from visual analysis, database lookups, and WHO alerts.
 Your verdicts must be evidence-based, clearly explained, and actionable.
-Patient safety is paramount — when in doubt, flag as suspicious.`;
+Patient safety is paramount — when in doubt, flag as suspicious.
+Write immediateAction and detailedExplanation in plain language a non-expert can understand.`;
 
 export async function generateVerdict(
   packaging: PackagingExtraction,
   fdaRecord: FDADrugRecord,
   whoAlert: WHOAlert | null,
-  visual: VisualAnalysis
+  visual: VisualAnalysis,
+  langNote = ""
 ): Promise<AuthenticityVerdict> {
   const prompt = `Synthesize all evidence and generate a final authenticity verdict.
 
@@ -53,41 +55,49 @@ Scoring guidelines:
 - Drug not in FDA database + multiple visual issues → score ≤ 50 (suspicious)
 - Clean visual + FDA verified + no alerts → score ≥ 75 (likely-authentic to authentic)`;
 
-  return callClaudeJSON<AuthenticityVerdict>(SYSTEM, prompt);
+  return callClaudeJSON<AuthenticityVerdict>(BASE_SYSTEM + langNote, prompt);
 }
 
 export function buildVerificationGuidance(
   packaging: PackagingExtraction,
-  verdict: AuthenticityVerdict
+  verdict: AuthenticityVerdict,
+  authority?: { country: string; authority: string; hotline: string; sms?: string; reportUrl: string | null; notes: string } | null
 ): string[] {
   const guidance: string[] = [];
 
   if (packaging.verificationCode) {
     guidance.push(
-      `Verification code detected: "${packaging.verificationCode}". Text this code to your country's medicine verification service (e.g., mPedigree: SMS to 1393 in Ghana/Nigeria).`
+      `Verification code detected: "${packaging.verificationCode}". SMS this code to your country's medicine verification service (mPedigree: SMS to 1393 in Ghana/Nigeria; Sproxil: SMS to 38353 in many countries).`
     );
   }
-
   if (packaging.hasQRCode) {
-    guidance.push("QR code detected — scan it with your phone camera. Legitimate QR codes should direct to the manufacturer's official website.");
+    guidance.push("QR code detected — scan it with your phone camera. Genuine QR codes link to the manufacturer's official website.");
   }
-
   if (packaging.hasScratchCode) {
-    guidance.push("Scratch verification panel detected — scratch and enter the code on the manufacturer's official verification website or SMS line.");
+    guidance.push("Scratch verification panel found — scratch it and enter the code at the manufacturer's official verification website or send via SMS.");
   }
 
   if (verdict.score < 60) {
-    guidance.push("DO NOT use this medicine until its authenticity is confirmed by a licensed pharmacist or healthcare provider.");
-    guidance.push("Report this product to your national medicines regulatory authority (NMRA) immediately.");
-    guidance.push("Preserve the packaging and any receipt — regulators will need them.");
+    guidance.push("⛔ DO NOT use this medicine until authenticity is confirmed by a licensed pharmacist or healthcare provider.");
+    guidance.push("📦 Keep the packaging and receipt — regulatory authorities will need them as evidence.");
+  }
+
+  if (authority) {
+    const line = [`📞 Report to ${authority.authority} (${authority.country}): ${authority.hotline}`];
+    if (authority.sms) line.push(`· SMS: ${authority.sms}`);
+    if (authority.reportUrl) line.push(`· Online: ${authority.reportUrl}`);
+    guidance.push(line.join(" "));
+    if (authority.notes) guidance.push(`ℹ️ ${authority.notes}`);
+  } else {
+    guidance.push("📞 Report to your national medicines regulatory authority. Keep the packaging as evidence.");
   }
 
   if (verdict.fdaStatus === "recalled") {
-    guidance.push("This product matches an FDA recall — stop use immediately and contact your pharmacist for a replacement.");
+    guidance.push("🚨 This product matches an FDA recall — stop use immediately and return it to your pharmacist.");
   }
 
-  guidance.push("Always purchase medicines from licensed pharmacies with verifiable supply chains.");
-  guidance.push("Check the WHO Medical Product Alerts database at who.int for the latest counterfeiting warnings.");
+  guidance.push("🛒 Always buy medicines from licensed pharmacies. Avoid informal markets, street vendors, and unverified online sellers.");
+  guidance.push("🌍 Check live WHO counterfeit alerts at: who.int/teams/regulation-prequalification/incidents-and-fraudulent-products");
 
   return guidance;
 }

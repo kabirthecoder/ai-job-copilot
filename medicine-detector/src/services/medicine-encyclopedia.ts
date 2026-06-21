@@ -130,7 +130,8 @@ Base your writing ONLY on the provided source data. Do not invent details.`;
 
 export async function buildEncyclopedia(
   drugName: string,
-  fdaRecord: FDADrugRecord
+  fdaRecord: FDADrugRecord,
+  langNote = ""
 ): Promise<MedicineEncyclopedia> {
   const cacheKey = `enc:${drugName.toLowerCase()}`;
   const cached = cache.get<MedicineEncyclopedia>(cacheKey);
@@ -153,7 +154,7 @@ export async function buildEncyclopedia(
     sideEffects: string[];
     interestingFacts: string[];
   }>(
-    SYNTH_SYSTEM,
+    SYNTH_SYSTEM + langNote,
     `Create a medicine encyclopedia entry for "${drugName}" using ONLY this source data.
 
 WIKIPEDIA EXTRACT:

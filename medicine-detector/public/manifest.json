@@ -1,0 +1,30 @@
+{
+  "name": "MediVerify — AI Medicine Scanner",
+  "short_name": "MediVerify",
+  "description": "Detect fake medicines using AI. Check against FDA, WHO alerts, and global drug databases.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060d1a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "categories": ["health", "medical", "utilities"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💊</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Scan Medicine",
+      "short_name": "Scan",
+      "description": "Take a photo of medicine packaging to check authenticity",
+      "url": "/",
+      "icons": []
+    }
+  ]
+}

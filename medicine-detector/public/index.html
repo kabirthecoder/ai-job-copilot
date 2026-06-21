@@ -4,6 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
   <title>MediVerify — AI Medicine Authenticity Scanner</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#2563eb"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -182,11 +186,45 @@
     .vtag.good{background:#02261a;color:#86efac}
     .vtag.warn{background:#2d1a00;color:#fcd34d}
 
+    /* ── LANGUAGE SELECTOR ── */
+    .lang-btn{display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:.5rem;padding:.35rem .6rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .lang-btn:hover{color:var(--text);border-color:var(--accent)}
+    .lang-menu{position:fixed;top:56px;right:1rem;background:var(--card);border:1px solid var(--border);border-radius:.875rem;padding:1rem;z-index:200;width:320px;max-width:calc(100vw - 2rem);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+    .lang-menu-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem}
+    .lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+    .lang-opt{display:flex;align-items:center;gap:.45rem;padding:.5rem .65rem;border-radius:.5rem;cursor:pointer;font-size:.82rem;transition:background .15s;border:1px solid transparent}
+    .lang-opt:hover{background:var(--surface);border-color:var(--border)}
+    .lang-opt.active{background:var(--accent-dim,#1d346120);border-color:var(--accent)}
+    .lang-opt-flag{font-size:1rem;flex-shrink:0}
+    .lang-opt-info strong{display:block;font-size:.8rem}
+    .lang-opt-info span{font-size:.68rem;color:var(--muted)}
+
+    /* ── WHATSAPP BANNER ── */
+    .wa-banner{background:linear-gradient(135deg,#012a18,#01341e);border:1px solid #25d36620;border-radius:1rem;padding:1.1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:.875rem}
+    .wa-icon{font-size:2rem;flex-shrink:0}
+    .wa-text h3{font-size:.9rem;font-weight:700;color:#25d366;margin-bottom:.2rem}
+    .wa-text p{font-size:.78rem;color:#86efac;line-height:1.5;opacity:.85}
+    .wa-number{font-size:.82rem;font-weight:700;color:#25d366;background:#01341e;border:1px solid #25d36640;border-radius:.4rem;padding:.25rem .6rem;margin-top:.4rem;display:inline-block;font-family:monospace;letter-spacing:.05em}
+
+    /* ── AUTHORITY PANEL ── */
+    .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:.75rem;padding:.875rem}
+    .auth-row{display:flex;align-items:flex-start;gap:.75rem}
+    .auth-flag{font-size:1.75rem;flex-shrink:0}
+    .auth-info h4{font-size:.9rem;font-weight:700;margin-bottom:.2rem}
+    .auth-info p{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:.4rem}
+    .auth-links{display:flex;gap:.4rem;flex-wrap:wrap}
+    .auth-link{font-size:.75rem;padding:.25rem .6rem;border-radius:.4rem;border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:all .2s}
+    .auth-link:hover{border-color:var(--accent);color:var(--text)}
+    .auth-link.phone{background:#012a18;color:#25d366;border-color:#25d36640}
+    .auth-link.sms{background:#0a1a2e;color:#60a5fa;border-color:#2563eb40}
+
     @media(max-width:480px){
       .igrid{grid-template-columns:1fr}
       .cam-row{grid-template-columns:1fr}
       .hero h2{font-size:1.6rem}
       .verdict-main{font-size:1.75rem}
+      .lang-grid{grid-template-columns:1fr}
+      .wa-banner{flex-direction:column;gap:.5rem}
     }
   </style>
 </head>
@@ -197,8 +235,19 @@
     <h1>MediVerify</h1>
     <p>AI-Powered Medicine Authenticity Scanner</p>
   </div>
-  <div class="live"><span class="dot"></span>Live</div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:.6rem">
+    <div class="live"><span class="dot"></span>Live</div>
+    <div class="lang-btn" id="langBtn" onclick="toggleLangMenu()" title="Change language">
+      <span id="langFlag">🌐</span> <span id="langName">EN</span> ▾
+    </div>
+  </div>
 </header>
+
+<!-- Language dropdown -->
+<div id="langMenu" class="lang-menu" style="display:none">
+  <div class="lang-menu-title">Choose your language</div>
+  <div class="lang-grid" id="langGrid"></div>
+</div>
 
 <main>
   <div class="hero">
@@ -212,6 +261,16 @@
       <span class="dpill"><strong>WHO</strong> Essential Medicines</span>
       <span class="dpill"><strong>PubChem</strong> + Wikipedia</span>
       <span class="dpill"><strong>Claude</strong> Vision AI</span>
+    </div>
+  </div>
+
+  <!-- WHATSAPP BANNER -->
+  <div class="wa-banner">
+    <div class="wa-icon">💬</div>
+    <div class="wa-text">
+      <h3>Use on WhatsApp — works in any language</h3>
+      <p>In Nigeria, Kenya, India, Bangladesh, and 50+ countries — just send a photo of your medicine to our WhatsApp number. Get results in Hausa, Swahili, Hindi, Urdu, Bengali, French, Arabic &amp; more.</p>
+      <span class="wa-number">WhatsApp: configure in .env → TWILIO_WHATSAPP_NUMBER</span>
     </div>
   </div>
 
@@ -379,6 +438,22 @@
       </div>
     </div>
 
+    <!-- REGULATORY AUTHORITY -->
+    <div id="authoritySection" style="display:none;margin-bottom:1rem">
+      <div class="slabel" style="margin-bottom:.6rem">📞 Report To Your National Authority</div>
+      <div class="auth-card">
+        <div class="auth-row">
+          <div class="auth-flag" id="authFlag"></div>
+          <div class="auth-info">
+            <h4 id="authName"></h4>
+            <p id="authFullName"></p>
+            <div class="auth-links" id="authLinks"></div>
+            <p id="authNotes" style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.5"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="disclaimer" id="disclaimerBox"></div>
 
     <div style="text-align:center;margin-top:1.25rem">
@@ -388,9 +463,63 @@
 </main>
 
 <script>
-let currentFile = null;
-let stepT = null, stepI = 0;
+// ── State ──
+let currentFile=null, stepT=null, stepI=0;
+let currentLang='en';
 
+// ── Language data (loaded from API) ──
+let LANGS={};
+
+// ── Init ──
+(async()=>{
+  try{
+    const r=await fetch('/api/languages');
+    LANGS=await r.json();
+    buildLangGrid();
+    // Auto-detect browser language
+    const bl=(navigator.language||'en').split('-')[0];
+    if(LANGS[bl])setLang(bl,false);
+  }catch(e){}
+  // Register service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  }
+})();
+
+function buildLangGrid(){
+  const grid=document.getElementById('langGrid');
+  if(!grid)return;
+  grid.innerHTML=Object.entries(LANGS).map(([code,l])=>
+    `<div class="lang-opt${code===currentLang?' active':''}" onclick="setLang('${code}',true)" id="lopt-${code}">
+      <span class="lang-opt-flag">${l.flag}</span>
+      <div class="lang-opt-info"><strong>${l.native}</strong><span>${l.name}</span></div>
+    </div>`
+  ).join('');
+}
+
+function setLang(code,closeMenu){
+  currentLang=code;
+  const l=LANGS[code]||{flag:'🌐',name:'EN'};
+  document.getElementById('langFlag').textContent=l.flag;
+  document.getElementById('langName').textContent=code.toUpperCase();
+  document.querySelectorAll('.lang-opt').forEach(el=>el.classList.remove('active'));
+  const opt=document.getElementById('lopt-'+code);
+  if(opt)opt.classList.add('active');
+  if(closeMenu)document.getElementById('langMenu').style.display='none';
+}
+
+function toggleLangMenu(){
+  const m=document.getElementById('langMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#langBtn')&&!e.target.closest('#langMenu')){
+    const m=document.getElementById('langMenu');
+    if(m)m.style.display='none';
+  }
+});
+
+// ── File handling ──
 ['fileInput','camInput','gallInput'].forEach(id=>{
   document.getElementById(id).addEventListener('change',e=>{
     const f=e.target.files?.[0];if(f)loadFile(f);
@@ -431,6 +560,7 @@ function resetApp(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// ── Steps animation ──
 function stepAnim(){
   const ids=['sl1','sl2','sl3','sl4','sl5','sl6'];
   stepI=0;
@@ -442,6 +572,7 @@ function stepAnim(){
   },2000);
 }
 
+// ── Analysis ──
 async function doAnalyze(){
   if(!currentFile)return;
   const btn=document.getElementById('analyzeBtn');
@@ -454,7 +585,7 @@ async function doAnalyze(){
   const fd=new FormData();
   fd.append('image',currentFile);
   try{
-    const res=await fetch('/api/analyze',{method:'POST',body:fd});
+    const res=await fetch('/api/analyze?lang='+currentLang,{method:'POST',body:fd});
     const data=await res.json();
     clearInterval(stepT);
     ['sl1','sl2','sl3','sl4','sl5','sl6'].forEach(id=>document.getElementById(id).className='step done');
@@ -470,14 +601,9 @@ async function doAnalyze(){
   }
 }
 
-function vc(v){
-  if(v==='authentic'||v==='likely-authentic')return'authentic';
-  if(v==='suspicious')return'suspicious';
-  return'counterfeit';
-}
-function ve(v){
-  return{authentic:'✅','likely-authentic':'✅',suspicious:'⚠️','likely-counterfeit':'🚨',counterfeit:'🚫'}[v]||'❓';
-}
+// ── Helpers ──
+function vc(v){return(v==='authentic'||v==='likely-authentic')?'authentic':v==='suspicious'?'suspicious':'counterfeit'}
+function ve(v){return{authentic:'✅','likely-authentic':'✅',suspicious:'⚠️','likely-counterfeit':'🚨',counterfeit:'🚫'}[v]||'❓'}
 function sc(s){return s>=70?'var(--green)':s>=45?'var(--yellow)':'var(--red)'}
 function fi(sev){return{critical:'🚫',high:'⚠️',medium:'⚡',low:'ℹ️'}[sev]||'•'}
 
@@ -488,82 +614,71 @@ function switchTab(name,el){
   document.getElementById('tab-'+name).classList.add('active');
 }
 
+// ── Render results ──
 function render(r){
   const {packaging,fdaRecord,whoAlertMatch,globalRegistries,visualAnalysis,verdict,encyclopedia,verificationGuidance,disclaimer}=r;
 
-  // ─ VERDICT HERO ─
+  // VERDICT HERO
   const cls=vc(verdict.verdict);
-  const hero=document.getElementById('verdictHero');
-  hero.className='verdict-hero '+cls;
+  document.getElementById('verdictHero').className='verdict-hero '+cls;
   document.getElementById('vEmoji').textContent=ve(verdict.verdict);
   const vm=document.getElementById('vMain');
   vm.textContent=verdict.verdict.replace(/-/g,' ');
   vm.className='verdict-main '+cls;
   document.getElementById('vSub').textContent=`Authenticity score ${verdict.score}/100 · Confidence: ${verdict.confidence}`;
-  const sc_=sc(verdict.score);
+  const color=sc(verdict.score);
   const circle=document.getElementById('scoreCircle');
-  circle.style.color=sc_;circle.style.borderColor=sc_;
+  circle.style.color=color; circle.style.borderColor=color;
   document.getElementById('scoreNum').textContent=verdict.score;
   document.getElementById('confBadge').textContent=verdict.confidence+' confidence';
   document.getElementById('actionBox').textContent=verdict.immediateAction;
 
-  // ─ WHO ALERT ─
+  // WHO ALERT
   if(whoAlertMatch){
     document.getElementById('whoBox').style.display='block';
     document.getElementById('whoDesc').textContent=whoAlertMatch.description;
     document.getElementById('whoMeta').innerHTML=
-      `<span>Alert ID: ${whoAlertMatch.id}</span><span>Date: ${whoAlertMatch.alertDate}</span>`+
-      `<span>Type: ${whoAlertMatch.alertType}</span><span>Countries: ${whoAlertMatch.countries.slice(0,3).join(', ')}</span>`;
+      `<span>Alert: ${whoAlertMatch.id}</span><span>${whoAlertMatch.alertDate}</span>`+
+      `<span>${whoAlertMatch.alertType}</span><span>${whoAlertMatch.countries.slice(0,3).join(', ')}</span>`;
   }
 
-  // ─ DRUG GRID ─
+  // DRUG GRID
   const fields=[
     ['Drug Name',packaging.drugName],['Manufacturer',packaging.manufacturer],
-    ['Batch Number',packaging.batchNumber||'Not detected'],['Expiry Date',packaging.expiryDate||'Not detected'],
-    ['Strength',packaging.strength||'Not detected'],['Country',packaging.countryOfOrigin||'Not detected'],
-    ['Reg. Number',packaging.registrationNumber||'Not detected'],['Dosage Form',packaging.dosageForm||'Not detected'],
+    ['Batch Number',packaging.batchNumber||'—'],['Expiry Date',packaging.expiryDate||'—'],
+    ['Strength',packaging.strength||'—'],['Country',packaging.countryOfOrigin||'—'],
+    ['Reg. Number',packaging.registrationNumber||'—'],['Dosage Form',packaging.dosageForm||'—'],
   ];
   document.getElementById('drugGrid').innerHTML=fields.map(([l,v])=>
     `<div class="iitem"><div class="ilabel">${l}</div><div class="ival">${v}</div></div>`).join('');
 
-  // ─ VISUAL BAR ─
+  // VISUAL BAR
   const ps=visualAnalysis.printQualityScore;
   document.getElementById('psLabel').textContent=ps+'/100';
   const bar=document.getElementById('psBar');
-  bar.style.width=ps+'%';bar.style.background=sc(ps);
-
-  // Visual tags
+  bar.style.width=ps+'%'; bar.style.background=sc(ps);
   const tags=[];
-  visualAnalysis.spellingErrors.forEach(e=>tags.push(`<span class="vtag bad">Spelling: ${e}</span>`));
-  visualAnalysis.fontInconsistencies.forEach(f=>tags.push(`<span class="vtag warn">${f}</span>`));
-  visualAnalysis.authenticElements.forEach(a=>tags.push(`<span class="vtag good">${a}</span>`));
-  visualAnalysis.suspiciousElements.slice(0,3).forEach(s=>tags.push(`<span class="vtag bad">${s}</span>`));
-  document.getElementById('vtags').innerHTML=tags.join('')||'<span class="vtag good">No notable anomalies</span>';
+  visualAnalysis.spellingErrors.forEach(e=>tags.push(`<span class="vtag bad">✗ ${e}</span>`));
+  visualAnalysis.fontInconsistencies.forEach(f=>tags.push(`<span class="vtag warn">⚡ ${f}</span>`));
+  visualAnalysis.authenticElements.forEach(a=>tags.push(`<span class="vtag good">✓ ${a}</span>`));
+  visualAnalysis.suspiciousElements.slice(0,3).forEach(s=>tags.push(`<span class="vtag bad">⚠ ${s}</span>`));
+  document.getElementById('vtags').innerHTML=tags.join('')||'<span class="vtag good">✓ No notable anomalies</span>';
 
-  // ─ RED FLAGS ─
-  if(verdict.redFlags.length===0){
-    document.getElementById('flagsList').innerHTML='<div class="no-flags">No red flags detected ✓</div>';
-  }else{
-    document.getElementById('flagsList').innerHTML=verdict.redFlags.map(f=>
-      `<div class="flag ${f.severity}"><span class="flag-ic">${fi(f.severity)}</span><span>${f.description}</span></div>`
-    ).join('');
-  }
+  // RED FLAGS
+  document.getElementById('flagsList').innerHTML=verdict.redFlags.length===0
+    ?'<div class="no-flags">No red flags detected ✓</div>'
+    :verdict.redFlags.map(f=>`<div class="flag ${f.severity}"><span class="flag-ic">${fi(f.severity)}</span><span>${f.description}</span></div>`).join('');
 
-  // ─ POSITIVES ─
+  // POSITIVES
   if(verdict.positiveSignals.length>0){
     document.getElementById('posSection').style.display='block';
-    document.getElementById('posList').innerHTML=verdict.positiveSignals
-      .map(s=>`<div class="positive">${s}</div>`).join('');
+    document.getElementById('posList').innerHTML=verdict.positiveSignals.map(s=>`<div class="positive">${s}</div>`).join('');
   }
 
-  // ─ EXPLANATION ─
   document.getElementById('explanBox').textContent=verdict.detailedExplanation;
+  document.getElementById('guidList').innerHTML=verificationGuidance.map(g=>`<div class="guidance-item">${g}</div>`).join('');
 
-  // ─ GUIDANCE ─
-  document.getElementById('guidList').innerHTML=verificationGuidance
-    .map(g=>`<div class="guidance-item">${g}</div>`).join('');
-
-  // ─ ENCYCLOPEDIA ─
+  // ENCYCLOPEDIA
   const enc=encyclopedia;
   if(enc.isWHOEssential){
     const b=document.getElementById('whoEssentialBadge');
@@ -574,7 +689,7 @@ function render(r){
     const mr=document.getElementById('molRow');
     mr.style.display='flex';
     if(enc.molecularFormula)mr.innerHTML+=`<span class="mol-tag">${enc.molecularFormula}</span>`;
-    if(enc.iupacName)mr.innerHTML+=`<span class="mol-tag" style="font-size:.65rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${enc.iupacName}">${enc.iupacName.slice(0,40)}${enc.iupacName.length>40?'…':''}</span>`;
+    if(enc.iupacName)mr.innerHTML+=`<span class="mol-tag" style="font-size:.65rem;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${enc.iupacName}">${enc.iupacName.slice(0,38)}${enc.iupacName.length>38?'…':''}</span>`;
   }
   document.getElementById('encWhat').textContent=enc.whatIsIt;
   document.getElementById('encMech').textContent=enc.mechanismOfAction;
@@ -585,13 +700,12 @@ function render(r){
   document.getElementById('encFacts').innerHTML=enc.interestingFacts.map(f=>`<li>${f}</li>`).join('');
   document.getElementById('encBrands').innerHTML=enc.commonBrandNames
     .map(b=>`<span class="vtag" style="background:var(--surface);color:var(--muted)">${b}</span>`).join('');
-
   const links=[];
   if(enc.wikipediaUrl)links.push(`<a class="enc-link" href="${enc.wikipediaUrl}" target="_blank" rel="noopener">📖 Wikipedia</a>`);
   if(enc.pubchemUrl)links.push(`<a class="enc-link" href="${enc.pubchemUrl}" target="_blank" rel="noopener">🔬 PubChem</a>`);
   document.getElementById('encLinks').innerHTML=links.join('');
 
-  // ─ REGISTRIES ─
+  // REGISTRIES
   document.getElementById('regGrid').innerHTML=globalRegistries.map(reg=>`
     <div class="reg-row">
       <span class="reg-flag">${reg.flag}</span>
@@ -602,11 +716,68 @@ function render(r){
       <span class="reg-status ${reg.found?'reg-yes':'reg-no'}">${reg.found?'✓ Found':'✗ Not found'}</span>
     </div>`).join('');
 
-  // ─ DISCLAIMER ─
-  document.getElementById('disclaimerBox').textContent=disclaimer;
+  // REGULATORY AUTHORITY — inferred from packaging languages / country
+  const country=packaging.countryOfOrigin;
+  const langs=packaging.languagesDetected||[];
+  // Simple client-side guess: check country field
+  if(country||langs.length){
+    renderAuthority(country,langs);
+  }
 
+  document.getElementById('disclaimerBox').textContent=disclaimer;
   document.getElementById('results').style.display='block';
   document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+
+// Authority data embedded for client-side use (key authorities)
+const AUTH_DB={
+  'nigeria':{flag:'🇳🇬',name:'NAFDAC',full:'National Agency for Food and Drug Administration and Control',hotline:'0800-162-3322',sms:'75948',report:'https://www.nafdac.gov.ng/report-counterfeits/',notes:'SMS drug name to 75948 to verify. NAFDAC numbers start with A, B, C, D, or F.'},
+  'ghana':{flag:'🇬🇭',name:'FDA Ghana',full:'Food and Drugs Authority Ghana',hotline:'+233-302-233-200',report:'https://fdaghana.gov.gh/consumer-information/report-a-product',notes:'Use mPedigree scratch codes where available.'},
+  'kenya':{flag:'🇰🇪',name:'PPB Kenya',full:'Pharmacy and Poisons Board',hotline:'+254-20-272-4816',report:'https://www.pharmacyboardkenya.org/report-substandard-falsified-medicines/',notes:''},
+  'tanzania':{flag:'🇹🇿',name:'TMDA',full:'Tanzania Medicines and Medical Devices Authority',hotline:'+255-22-245-0512',report:'https://www.tmda.go.tz',notes:'TMDA registration numbers start with TMDA + 6 digits.'},
+  'india':{flag:'🇮🇳',name:'CDSCO',full:'Central Drugs Standard Control Organisation',hotline:'1800-180-3024',report:'https://cdsco.gov.in/opencms/opencms/en/Medicine/spurious-adulterated.html',notes:'Toll-free hotline 1800-180-3024 for spurious drugs.'},
+  'pakistan':{flag:'🇵🇰',name:'DRAP',full:'Drug Regulatory Authority of Pakistan',hotline:'051-9106316',report:'https://www.dra.gov.pk/complaint',notes:'DRAP registration number appears on all registered medicines.'},
+  'bangladesh':{flag:'🇧🇩',name:'DGDA',full:'Directorate General of Drug Administration',hotline:'+880-2-8830202',report:'https://www.dgda.gov.bd',notes:''},
+  'indonesia':{flag:'🇮🇩',name:'BPOM',full:'Badan Pengawas Obat dan Makanan',hotline:'1500-533',report:'https://www.pom.go.id/laporan',notes:'Check registration at cekbpom.pom.go.id. NIE numbers start with DTL, DKL, or DBL.'},
+  'philippines':{flag:'🇵🇭',name:'FDA Philippines',full:'Food and Drug Administration Philippines',hotline:'+63-2-8857-1900',report:'https://www.fda.gov.ph/report-to-fda/',notes:'Verify at verification.fda.gov.ph.'},
+  'south africa':{flag:'🇿🇦',name:'SAHPRA',full:'South African Health Products Regulatory Authority',hotline:'+27-12-501-0415',report:'https://www.sahpra.org.za',notes:''},
+  'ethiopia':{flag:'🇪🇹',name:'EFDA',full:'Ethiopian Food and Drug Authority',hotline:'+251-11-552-7798',report:'https://www.efda.gov.et/report/',notes:''},
+  'uganda':{flag:'🇺🇬',name:'NDA Uganda',full:'National Drug Authority Uganda',hotline:'+256-414-255-665',report:'https://www.nda.or.ug/report-a-product/',notes:''},
+  'vietnam':{flag:'🇻🇳',name:'DAV',full:'Drug Administration of Vietnam',hotline:'+84-24-3846-0048',report:'https://dav.gov.vn',notes:'Registration starts with VD (domestic) or VN (imported).'},
+  'myanmar':{flag:'🇲🇲',name:'FDB Myanmar',full:'Food and Drug Administration Myanmar',hotline:'+95-1-657-791',report:'https://www.fda.gov.mm',notes:''},
+  'egypt':{flag:'🇪🇬',name:'EDA',full:'Egyptian Drug Authority',hotline:'+20-2-3760-1002',report:'https://www.eda.mohp.gov.eg',notes:''},
+  'brazil':{flag:'🇧🇷',name:'ANVISA',full:'Agência Nacional de Vigilância Sanitária',hotline:'0800-642-9782',report:'https://www.gov.br/anvisa',notes:''},
+  'united states':{flag:'🇺🇸',name:'FDA',full:'Food and Drug Administration',hotline:'1-800-551-3989',report:'https://www.fda.gov/safety/medwatch',notes:''},
+  'china':{flag:'🇨🇳',name:'NMPA',full:'National Medical Products Administration',hotline:'12331',report:'https://www.nmpa.gov.cn',notes:'Check at query.nmpa.gov.cn.'},
+  'malaysia':{flag:'🇲🇾',name:'NPRA',full:'National Pharmaceutical Regulatory Agency',hotline:'+60-3-7883-5400',report:'https://www.npra.gov.my/index.php/en/complaint-report',notes:'MAL + 8 digits on registered medicines.'},
+};
+
+// Language → likely country map (fallback when country not on packaging)
+const LANG_COUNTRY={'hausa':'nigeria','yoruba':'nigeria','igbo':'nigeria','swahili':'kenya','amharic':'ethiopia','hindi':'india','bengali':'bangladesh','urdu':'pakistan','indonesian':'indonesia','bahasa':'indonesia','filipino':'philippines','tagalog':'philippines','vietnamese':'vietnam','burmese':'myanmar','khmer':'cambodia','arabic':'egypt'};
+
+function renderAuthority(country,langs){
+  let auth=null;
+  if(country)auth=AUTH_DB[country.toLowerCase()];
+  if(!auth){
+    for(const lang of langs){
+      const mapped=LANG_COUNTRY[lang.toLowerCase()];
+      if(mapped&&AUTH_DB[mapped]){auth=AUTH_DB[mapped];break;}
+    }
+  }
+  if(!auth)return;
+
+  const sec=document.getElementById('authoritySection');
+  sec.style.display='block';
+  document.getElementById('authFlag').textContent=auth.flag;
+  document.getElementById('authName').textContent=auth.name;
+  document.getElementById('authFullName').textContent=auth.full;
+  document.getElementById('authNotes').textContent=auth.notes;
+
+  const links=[];
+  links.push(`<a class="auth-link phone" href="tel:${auth.hotline}">📞 ${auth.hotline}</a>`);
+  if(auth.sms)links.push(`<span class="auth-link sms">SMS: ${auth.sms}</span>`);
+  if(auth.report)links.push(`<a class="auth-link" href="${auth.report}" target="_blank" rel="noopener">🌐 Report Online</a>`);
+  document.getElementById('authLinks').innerHTML=links.join('');
 }
 </script>
 </body>
