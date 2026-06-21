@@ -1,0 +1,46 @@
+{
+  "state": "New York",
+  "minimumNoticeDays": {
+    "pay-or-quit": 14,
+    "cure-or-quit": 10,
+    "unconditional-quit-under-1-year": 30,
+    "unconditional-quit-1-to-2-years": 60,
+    "unconditional-quit-over-2-years": 90,
+    "no-fault": 30
+  },
+  "requiredDisclosures": [
+    "Notice must be in writing and state the specific reason",
+    "Notice must include the exact rent owed and period it covers (for nonpayment)",
+    "Notice must be served: personal delivery, leave with person of suitable age and mail, or affix to door and mail",
+    "14-day rent demand must precede nonpayment eviction proceedings",
+    "Landlord must provide Good Cause notice under Good Cause Eviction Law where applicable",
+    "NYC: landlord must register rent-stabilized units and file annual rent registrations"
+  ],
+  "illegalReasons": [
+    "Tenant complained to a government agency about housing conditions",
+    "Tenant organized or participated in a tenant organization",
+    "Tenant requested repairs",
+    "Tenant withheld rent due to uninhabitable conditions",
+    "Discrimination based on race, creed, color, national origin, sex, disability, age, marital status, sexual orientation, military status, or source of lawful income (includes Section 8 vouchers)",
+    "Presence of children (familial status)",
+    "In NYC: evicting rent-stabilized tenant without proper just cause grounds"
+  ],
+  "retaliationProtections": [
+    "Real Property Law Section 223-b prohibits retaliatory evictions",
+    "Retaliation presumed if landlord acts within 60 days of tenant complaint or activity",
+    "Tenant may raise retaliation as affirmative defense in eviction proceedings",
+    "Tenant may sue for damages, attorney fees, and injunctive relief"
+  ],
+  "rentControlCities": [
+    "New York City", "Buffalo", "Albany", "Yonkers", "Schenectady"
+  ],
+  "goodCauseEviction": "Effective 2024: covers most NYC tenants and municipalities that opt in. Requires 'good cause' for non-renewal, limits rent increases to 5% + CPI (capped at 10%). Landlord must provide written explanation for any non-renewal.",
+  "notes": [
+    "New York Housing Stability and Tenant Protection Act (HSTPA 2019) significantly strengthened tenant rights",
+    "Security deposit capped at 1 month's rent statewide",
+    "Landlord cannot collect late fees unless rent is more than 5 days late, capped at $50 or 5%",
+    "Unlawful lockouts: tenant can call police and sue for treble damages",
+    "NYC Housing Court provides free legal services for income-eligible tenants (right to counsel in eviction proceedings)",
+    "Good Cause Eviction Law (2024) may apply — check if your municipality opted in"
+  ]
+}

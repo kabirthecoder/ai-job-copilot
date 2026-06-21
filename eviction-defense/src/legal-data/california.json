@@ -1,0 +1,44 @@
+{
+  "state": "California",
+  "minimumNoticeDays": {
+    "pay-or-quit": 3,
+    "cure-or-quit": 3,
+    "unconditional-quit": 3,
+    "no-fault-month-to-month-under-1-year": 30,
+    "no-fault-month-to-month-over-1-year": 60,
+    "no-fault-just-cause": 90
+  },
+  "requiredDisclosures": [
+    "Notice must state the specific reason for eviction",
+    "Notice must include the exact amount of rent owed (for pay-or-quit)",
+    "Notice must be served properly: personal delivery, substituted service, or posting and mailing",
+    "For properties built before 1978, lead paint disclosure required",
+    "Under AB 1482 (Tenant Protection Act), landlord must state just cause for eviction if property is covered"
+  ],
+  "illegalReasons": [
+    "Tenant complained to a government agency about habitability or building code violations",
+    "Tenant organized or participated in a tenant union",
+    "Tenant requested repairs in writing",
+    "Tenant exercised any legal right",
+    "Discrimination based on race, color, religion, sex, national origin, disability, familial status, source of income, sexual orientation, gender identity, marital status, age, or ancestry",
+    "Tenant's immigration or citizenship status"
+  ],
+  "retaliationProtections": [
+    "California Civil Code Section 1942.5 prohibits retaliatory evictions",
+    "If tenant complained about habitability within 180 days before notice, retaliation is presumed",
+    "Landlord must prove non-retaliatory motive if evicting within 180 days of tenant complaint"
+  ],
+  "rentControlCities": [
+    "Los Angeles", "San Francisco", "Oakland", "San Jose", "Santa Monica",
+    "Berkeley", "East Palo Alto", "Hayward", "West Hollywood", "Richmond",
+    "Mountain View", "Glendale", "Inglewood"
+  ],
+  "ab1482Coverage": "Properties built after 2005 are exempt. Single-family homes and condos are exempt if owner provides written notice. Duplexes where owner occupies one unit are exempt.",
+  "notes": [
+    "California's Tenant Protection Act (AB 1482) requires 'just cause' for eviction in covered properties",
+    "Relocation assistance of 1 month's rent required for no-fault evictions in covered properties",
+    "Self-help evictions (changing locks, removing belongings) are illegal — tenant can sue for actual damages + $100/day",
+    "Waiving tenant rights in a lease is void and unenforceable under California law",
+    "COVID-19 protections may still apply in some jurisdictions — check local ordinances"
+  ]
+}

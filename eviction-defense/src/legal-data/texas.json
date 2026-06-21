@@ -1,0 +1,40 @@
+{
+  "state": "Texas",
+  "minimumNoticeDays": {
+    "pay-or-quit": 3,
+    "cure-or-quit": 3,
+    "unconditional-quit": 3,
+    "month-to-month-termination": 30,
+    "week-to-week-termination": 7
+  },
+  "requiredDisclosures": [
+    "Written notice must be given before filing eviction in Justice Court",
+    "Notice must state the specific grounds for eviction",
+    "Notice must be delivered: in person to tenant, to anyone 16+ at the property, by mail, or by affixing to inside of main entry door",
+    "Notice left on door must also be mailed on the same day",
+    "Landlord must provide written inventory of security deposit deductions within 30 days of move-out"
+  ],
+  "illegalReasons": [
+    "Tenant filed a complaint with a governmental entity about a building or housing code violation",
+    "Tenant established, attempted to establish, or participated in a tenant organization",
+    "Tenant exercised a right or remedy under Texas law",
+    "Tenant requested a repair in writing",
+    "Discrimination based on race, color, national origin, religion, sex, familial status, or disability (Fair Housing Act)",
+    "Texas law: evicting to retaliate is illegal under Texas Property Code Section 92.331"
+  ],
+  "retaliationProtections": [
+    "Texas Property Code Section 92.331: landlord may not retaliate against tenant for good-faith exercise of rights",
+    "Retaliation presumed if landlord acts within 6 months after tenant exercised rights",
+    "Tenant may terminate lease, withhold rent, or sue for a civil penalty of 1 month's rent + $500 + attorney fees if retaliation proven"
+  ],
+  "rentControlCities": [],
+  "notes": [
+    "Texas has no statewide rent control — preempted by state law",
+    "Landlord must make repairs that materially affect health or safety if tenant gives written notice",
+    "Tenant may repair-and-deduct up to 1 month's rent if landlord fails to make required repairs",
+    "Writ of possession (lockout) can be executed 24 hours after judgment — very fast process in Texas",
+    "Security deposit must be returned within 30 days of move-out with written itemization of deductions",
+    "Landlord must provide working smoke detectors — failure may be a defense",
+    "Texas Justice Court eviction process (forcible entry and detainer) is county-level"
+  ]
+}
