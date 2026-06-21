@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 *.local
+# explicitly un-ignore our curated data files
+!src/data/

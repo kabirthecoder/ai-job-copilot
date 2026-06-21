@@ -28,6 +28,8 @@ export interface FDADrugRecord {
   manufacturers: string[];
   dosageForms: string[];
   activeIngredients: string[];
+  indications?: string;
+  warnings?: string;
   hasRecalls: boolean;
   recalls: FDARecall[];
 }
@@ -54,7 +56,7 @@ export interface WHOAlert {
 
 export interface VisualAnalysis {
   overallQuality: "high" | "medium" | "low" | "very-low";
-  printQualityScore: number; // 0-100
+  printQualityScore: number;
   spellingErrors: string[];
   fontInconsistencies: string[];
   colorAnomalies: string[];
@@ -65,8 +67,42 @@ export interface VisualAnalysis {
   expiryFormatValid: boolean;
 }
 
+export interface RegistryResult {
+  name: string;
+  region: string;
+  flag: string;
+  found: boolean;
+  status?: string;
+  details?: string;
+}
+
+export interface MedicineEncyclopedia {
+  drugName: string;
+  iupacName?: string;
+  molecularFormula?: string;
+  whatIsIt: string;
+  discoveryAndHistory: string;
+  medicalUses: string[];
+  mechanismOfAction: string;
+  isWHOEssential: boolean;
+  essentialMedicineCategory?: string;
+  commonBrandNames: string[];
+  keyWarnings: string[];
+  sideEffects: string[];
+  interestingFacts: string[];
+  wikipediaUrl?: string;
+  pubchemUrl?: string;
+  pubchemCID?: number;
+}
+
+export interface RedFlag {
+  severity: "critical" | "high" | "medium" | "low";
+  category: "visual" | "database" | "who-alert" | "recall" | "format" | "text" | "registry";
+  description: string;
+}
+
 export interface AuthenticityVerdict {
-  score: number; // 0-100 (100 = definitely authentic)
+  score: number;
   verdict: "authentic" | "likely-authentic" | "suspicious" | "likely-counterfeit" | "counterfeit";
   confidence: "high" | "medium" | "low";
   redFlags: RedFlag[];
@@ -77,18 +113,14 @@ export interface AuthenticityVerdict {
   detailedExplanation: string;
 }
 
-export interface RedFlag {
-  severity: "critical" | "high" | "medium" | "low";
-  category: "visual" | "database" | "who-alert" | "recall" | "format" | "text";
-  description: string;
-}
-
 export interface AnalysisResult {
   packaging: PackagingExtraction;
   fdaRecord: FDADrugRecord;
   whoAlertMatch: WHOAlert | null;
+  globalRegistries: RegistryResult[];
   visualAnalysis: VisualAnalysis;
   verdict: AuthenticityVerdict;
+  encyclopedia: MedicineEncyclopedia;
   verificationGuidance: string[];
   disclaimer: string;
 }

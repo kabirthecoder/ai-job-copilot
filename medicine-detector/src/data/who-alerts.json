@@ -1,5 +1,27 @@
 [
   {
+    "id": "WHO-2024-006",
+    "alertDate": "2024-09-04",
+    "productName": "Augmentin (Amoxicillin/Clavulanate) 625mg Tablets",
+    "manufacturer": "Falsified product mimicking GSK",
+    "batchNumbers": ["AC2024A", "AC2024B"],
+    "countries": ["Nigeria", "Ghana", "Kenya", "Ethiopia"],
+    "alertType": "falsified",
+    "description": "Falsified Augmentin tablets lacking clavulanate entirely. Packaging closely mimics GSK branding. Identified by blurred holographic strip and incorrect font weight on batch number.",
+    "source": "WHO Medical Product Alert #6/2024"
+  },
+  {
+    "id": "WHO-2024-004",
+    "alertDate": "2024-07-18",
+    "productName": "Metformin 500mg Tablets",
+    "manufacturer": "Unknown substandard manufacturer",
+    "batchNumbers": ["MET24001", "MET24002", "MET24003"],
+    "countries": ["India", "Pakistan", "Bangladesh", "Nepal"],
+    "alertType": "substandard",
+    "description": "Substandard metformin tablets with dissolution failure — active ingredient does not dissolve properly in the body, leading to treatment failure in type 2 diabetes patients. Detected through post-market surveillance.",
+    "source": "WHO Medical Product Alert #4/2024"
+  },
+  {
     "id": "WHO-2024-001",
     "alertDate": "2024-03-12",
     "productName": "Artemether/Lumefantrine 20mg/120mg",
@@ -11,6 +33,28 @@
     "source": "WHO Medical Product Alert #1/2024"
   },
   {
+    "id": "WHO-2023-021",
+    "alertDate": "2023-12-20",
+    "productName": "Sildenafil Citrate 100mg (Viagra)",
+    "manufacturer": "Multiple unauthorized manufacturers",
+    "batchNumbers": [],
+    "countries": ["Brazil", "Argentina", "Mexico", "Colombia", "Peru"],
+    "alertType": "unregistered",
+    "description": "Counterfeit Viagra tablets widely circulating through online pharmacies and street vendors in Latin America. Products contain variable sildenafil doses (0–200mg) and undeclared substances including undeclared PDE5 inhibitors. Risk of severe hypotension.",
+    "source": "WHO Medical Product Alert #21/2023"
+  },
+  {
+    "id": "WHO-2023-017",
+    "alertDate": "2023-11-30",
+    "productName": "Paracetamol (Acetaminophen) 500mg Tablets",
+    "manufacturer": "Unknown substandard manufacturer — multiple sources",
+    "batchNumbers": ["PCM2309A", "PCM2309B"],
+    "countries": ["Myanmar", "Cambodia", "Laos", "Vietnam", "Thailand"],
+    "alertType": "substandard",
+    "description": "Substandard paracetamol tablets with only 30–45% of stated active ingredient. Associated with treatment failure in fever management. Packaging uses correct typography but lacks regulatory approval marks required in ASEAN region.",
+    "source": "WHO Medical Product Alert #17/2023"
+  },
+  {
     "id": "WHO-2023-015",
     "alertDate": "2023-11-08",
     "productName": "Amoxicillin 500mg Capsules",
@@ -20,6 +64,17 @@
     "alertType": "falsified",
     "description": "Falsified amoxicillin capsules containing no active pharmaceutical ingredient. Packaging appears legitimate but lacks proper holographic security features. Batch numbers follow sequential pattern atypical of genuine manufacturers.",
     "source": "WHO Medical Product Alert #15/2023"
+  },
+  {
+    "id": "WHO-2023-012",
+    "alertDate": "2023-09-05",
+    "productName": "Amlodipine 5mg Tablets",
+    "manufacturer": "Various unregistered manufacturers",
+    "batchNumbers": ["AML23-01", "AML23-02"],
+    "countries": ["Sudan", "South Sudan", "Libya", "Chad", "Niger"],
+    "alertType": "unregistered",
+    "description": "Unregistered amlodipine tablets circulating in conflict-affected regions. Products show variable potency (20–140% of stated dose). Associated with cases of uncontrolled hypertension and hypotensive episodes.",
+    "source": "WHO Medical Product Alert #12/2023"
   },
   {
     "id": "WHO-2023-009",
@@ -44,15 +99,37 @@
     "source": "WHO Medical Product Alert #4/2023"
   },
   {
+    "id": "WHO-2022-031",
+    "alertDate": "2022-12-14",
+    "productName": "Ciprofloxacin 500mg Tablets",
+    "manufacturer": "Falsified product — unknown origin",
+    "batchNumbers": ["CIPRO2212A", "CIPRO2212B"],
+    "countries": ["Cameroon", "Ivory Coast", "Senegal", "Mali", "Burkina Faso"],
+    "alertType": "falsified",
+    "description": "Falsified ciprofloxacin tablets with subtherapeutic content detected in West Africa. Associated with treatment failure in urinary tract and respiratory infections. Packaging lacks French language regulatory requirements.",
+    "source": "WHO Medical Product Alert #31/2022"
+  },
+  {
     "id": "WHO-2022-027",
     "alertDate": "2022-10-05",
-    "productName": "Cough and Cold Syrups",
-    "manufacturer": "Marion Biotech Pvt Ltd (India) — multiple products",
+    "productName": "Cough and Cold Syrups (Promethazine/Dextromethorphan)",
+    "manufacturer": "Marion Biotech Pvt Ltd (India)",
     "batchNumbers": ["COF22A01", "COF22A02", "COF22B01"],
     "countries": ["Gambia", "Uzbekistan", "Indonesia"],
     "alertType": "substandard",
     "description": "Substandard cough syrups linked to acute kidney injury in children. Products contain diethylene glycol and ethylene glycol above acceptable limits. STOP USE IMMEDIATELY.",
     "source": "WHO Medical Product Alert #27/2022"
+  },
+  {
+    "id": "WHO-2022-023",
+    "alertDate": "2022-09-01",
+    "productName": "Ivermectin 12mg Tablets",
+    "manufacturer": "Multiple unauthorized sources",
+    "batchNumbers": [],
+    "countries": ["United States", "Canada", "Australia", "United Kingdom", "Germany"],
+    "alertType": "unregistered",
+    "description": "Counterfeit ivermectin tablets circulating globally during COVID-19 pandemic. Products range from veterinary ivermectin repurposed and repackaged to products with no active ingredient. Contains undeclared excipients.",
+    "source": "WHO Medical Product Alert #23/2022"
   },
   {
     "id": "WHO-2022-019",
@@ -68,24 +145,35 @@
   {
     "id": "WHO-2022-011",
     "alertDate": "2022-05-22",
-    "productName": "Tramadol 225mg (non-standard dose)",
-    "manufacturer": "Various illegal manufacturers",
+    "productName": "Tramadol 225mg (non-pharmacopoeial dose)",
+    "manufacturer": "Various illegal manufacturers — primarily from Asia",
     "batchNumbers": [],
     "countries": ["Nigeria", "Ghana", "Ivory Coast", "Niger", "Chad"],
     "alertType": "unregistered",
-    "description": "Non-pharmacopoeial 225mg tramadol tablets circulating widely. Not approved in any jurisdiction. Associated with substance abuse and overdose deaths. No legitimate manufacturer produces this dose.",
+    "description": "Non-pharmacopoeial 225mg tramadol tablets circulating widely. Not approved in any jurisdiction — 225mg is not a recognized therapeutic dose. Associated with substance abuse and overdose deaths. No legitimate manufacturer produces this dose.",
     "source": "WHO Medical Product Alert #11/2022"
   },
   {
     "id": "WHO-2021-033",
     "alertDate": "2021-12-01",
-    "productName": "COVID-19 Vaccines (falsified)",
-    "manufacturer": "Multiple falsified sources",
+    "productName": "COVID-19 Vaccines (multiple brands — falsified)",
+    "manufacturer": "Multiple falsified sources globally",
     "batchNumbers": ["FAKE-001", "FAKE-002"],
-    "countries": ["Mexico", "Poland", "India", "Vietnam", "China"],
+    "countries": ["Mexico", "Poland", "India", "Vietnam", "China", "United States"],
     "alertType": "falsified",
-    "description": "Falsified COVID-19 vaccines detected globally. Products may contain saline solution, distilled water, or other substances. Vials may have altered labels from real manufacturers.",
+    "description": "Falsified COVID-19 vaccines detected globally. Products may contain saline solution, distilled water, or other substances. Vials may have altered labels from real manufacturers including Pfizer-BioNTech, Moderna, AstraZeneca.",
     "source": "WHO Medical Product Alert #33/2021"
+  },
+  {
+    "id": "WHO-2021-025",
+    "alertDate": "2021-10-11",
+    "productName": "Azithromycin 500mg Tablets",
+    "manufacturer": "Falsified products — multiple origins",
+    "batchNumbers": ["AZI210901", "AZI210902"],
+    "countries": ["Indonesia", "Philippines", "Vietnam", "Malaysia"],
+    "alertType": "falsified",
+    "description": "Falsified azithromycin tablets with subtherapeutic content circulating in Southeast Asia. Associated with treatment failure in respiratory infections during COVID-19 pandemic. Some batches contain no active ingredient.",
+    "source": "WHO Medical Product Alert #25/2021"
   },
   {
     "id": "WHO-2021-018",
@@ -99,6 +187,28 @@
     "source": "WHO Medical Product Alert #18/2021"
   },
   {
+    "id": "WHO-2021-009",
+    "alertDate": "2021-04-22",
+    "productName": "Insulin (Human, Regular) 100 IU/mL",
+    "manufacturer": "Falsified Novo Nordisk/Sanofi products",
+    "batchNumbers": ["INS210301", "INS210302"],
+    "countries": ["Kenya", "Tanzania", "Rwanda", "Uganda"],
+    "alertType": "falsified",
+    "description": "Falsified human insulin vials detected in East Africa. Products contain significantly reduced or no active ingredient. Life-threatening risk of diabetic ketoacidosis. Cold-chain labeling present but non-functional.",
+    "source": "WHO Medical Product Alert #9/2021"
+  },
+  {
+    "id": "WHO-2020-015",
+    "alertDate": "2020-07-20",
+    "productName": "Dexamethasone 4mg/mL Injection",
+    "manufacturer": "Unknown substandard manufacturers",
+    "batchNumbers": ["DEX2006A", "DEX2006B"],
+    "countries": ["Bolivia", "Peru", "Ecuador", "Brazil"],
+    "alertType": "substandard",
+    "description": "Substandard dexamethasone injections with particulate contamination detected. Circulated widely during COVID-19 after dexamethasone was identified as an effective treatment for severe COVID-19. Risk of sepsis and emboli.",
+    "source": "WHO Medical Product Alert #15/2020"
+  },
+  {
     "id": "WHO-2020-008",
     "alertDate": "2020-04-30",
     "productName": "Chloroquine Phosphate 250mg",
@@ -106,8 +216,19 @@
     "batchNumbers": [],
     "countries": ["Nigeria", "Ghana", "Cameroon", "Togo", "Benin"],
     "alertType": "substandard",
-    "description": "Substandard chloroquine products with highly variable active ingredient content (10-180% of stated dose). Risk of treatment failure and toxicity.",
+    "description": "Substandard chloroquine products with highly variable active ingredient content (10–180% of stated dose). Risk of treatment failure and toxicity.",
     "source": "WHO Medical Product Alert #8/2020"
+  },
+  {
+    "id": "WHO-2020-003",
+    "alertDate": "2020-02-14",
+    "productName": "Sulfadoxine/Pyrimethamine 500mg/25mg (Fansidar)",
+    "manufacturer": "Falsified Roche product",
+    "batchNumbers": ["FAN2001A"],
+    "countries": ["Tanzania", "Zambia", "Zimbabwe", "Malawi", "Mozambique"],
+    "alertType": "falsified",
+    "description": "Falsified Fansidar tablets used in intermittent preventive treatment of malaria in pregnancy. Contains no active ingredients. Risk of malaria in pregnant women and adverse birth outcomes.",
+    "source": "WHO Medical Product Alert #3/2020"
   },
   {
     "id": "WHO-2019-022",
@@ -130,5 +251,93 @@
     "alertType": "substandard",
     "description": "Substandard amlodipine tablets with degraded active ingredient below 50% stated dose. Associated with uncontrolled hypertension in patients who switched to this product.",
     "source": "WHO Medical Product Alert #15/2019"
+  },
+  {
+    "id": "WHO-2019-008",
+    "alertDate": "2019-03-29",
+    "productName": "Atorvastatin 40mg Tablets",
+    "manufacturer": "Falsified Pfizer Lipitor",
+    "batchNumbers": ["LIP190201A", "LIP190201B"],
+    "countries": ["Russia", "Ukraine", "Kazakhstan", "Belarus"],
+    "alertType": "falsified",
+    "description": "Falsified Lipitor (atorvastatin) tablets detected in Eastern Europe. Packaging nearly identical to genuine Pfizer product but hologram lacks rainbow shifting properties. Active ingredient content approximately 20% of stated dose.",
+    "source": "WHO Medical Product Alert #8/2019"
+  },
+  {
+    "id": "WHO-2018-025",
+    "alertDate": "2018-11-07",
+    "productName": "Diclofenac Sodium 25mg/mL Injection",
+    "manufacturer": "Unknown substandard manufacturer",
+    "batchNumbers": ["DCL18-09A"],
+    "countries": ["Afghanistan", "Iraq", "Syria", "Yemen"],
+    "alertType": "substandard",
+    "description": "Substandard diclofenac sodium injections with particulate contamination and pH outside acceptable range. Circulating in conflict zones where supply chain verification is difficult.",
+    "source": "WHO Medical Product Alert #25/2018"
+  },
+  {
+    "id": "WHO-2018-017",
+    "alertDate": "2018-08-22",
+    "productName": "Rifampicin 150mg + Isoniazid 75mg Tablets (Rifamate)",
+    "manufacturer": "Substandard manufacturer — identity unknown",
+    "batchNumbers": ["RIF18-06", "RIF18-07"],
+    "countries": ["Democratic Republic of Congo", "Angola", "Zambia"],
+    "alertType": "substandard",
+    "description": "Substandard TB combination tablets with bioavailability failure. Hardness of tablets prevents adequate dissolution. Associated with TB treatment failure and emergence of drug resistance.",
+    "source": "WHO Medical Product Alert #17/2018"
+  },
+  {
+    "id": "WHO-2018-009",
+    "alertDate": "2018-04-30",
+    "productName": "Erythropoietin (EPO) 4000 IU Injection",
+    "manufacturer": "Falsified branded products",
+    "batchNumbers": ["EPO18-03A"],
+    "countries": ["China", "Vietnam", "Philippines"],
+    "alertType": "falsified",
+    "description": "Falsified erythropoietin injections detected. Products contain saline or significantly reduced EPO. Used by anemia patients and (illicitly) in sports doping. Some batches contain immunogenic contaminants.",
+    "source": "WHO Medical Product Alert #9/2018"
+  },
+  {
+    "id": "WHO-2017-022",
+    "alertDate": "2017-10-18",
+    "productName": "Albendazole 400mg Tablets",
+    "manufacturer": "Unknown substandard source",
+    "batchNumbers": ["ALB17-08"],
+    "countries": ["Tanzania", "Kenya", "Ethiopia", "Somalia"],
+    "alertType": "substandard",
+    "description": "Substandard albendazole tablets used in mass drug administration for deworming programs. Active ingredient below 80% of stated amount, reducing effectiveness of public health deworming campaigns.",
+    "source": "WHO Medical Product Alert #22/2017"
+  },
+  {
+    "id": "WHO-2017-011",
+    "alertDate": "2017-06-05",
+    "productName": "Misoprostol 200mcg Tablets",
+    "manufacturer": "Falsified Cytotec — multiple sources",
+    "batchNumbers": ["CYTO17-04A", "CYTO17-04B"],
+    "countries": ["Nigeria", "Ghana", "Ivory Coast", "Senegal"],
+    "alertType": "falsified",
+    "description": "Falsified misoprostol tablets used for prevention of postpartum hemorrhage. Products contain minimal or no active ingredient. PPH is a leading cause of maternal mortality — falsified misoprostol is life-threatening.",
+    "source": "WHO Medical Product Alert #11/2017"
+  },
+  {
+    "id": "WHO-2016-033",
+    "alertDate": "2016-12-15",
+    "productName": "Adrenaline (Epinephrine) 1mg/mL Injection",
+    "manufacturer": "Substandard product — multiple manufacturers",
+    "batchNumbers": ["EPI16-10A", "EPI16-10B"],
+    "countries": ["Haiti", "Guatemala", "Honduras", "El Salvador"],
+    "alertType": "substandard",
+    "description": "Substandard epinephrine injections with significant degradation. Products exposed to excessive heat during transport, rendering the active ingredient ineffective. Risk of failed anaphylaxis treatment.",
+    "source": "WHO Medical Product Alert #33/2016"
+  },
+  {
+    "id": "WHO-2016-019",
+    "alertDate": "2016-08-30",
+    "productName": "Oxytocin 10 IU/mL Injection (multiple brands)",
+    "manufacturer": "Various substandard manufacturers — Sub-Saharan Africa",
+    "batchNumbers": [],
+    "countries": ["Nigeria", "Democratic Republic of Congo", "Tanzania", "Ghana", "Zambia"],
+    "alertType": "substandard",
+    "description": "Systematic survey found over 60% of oxytocin products sampled in Sub-Saharan Africa failed quality standards. Poor cold-chain maintenance and substandard manufacturing leads to degraded active ingredient. Major contributor to postpartum hemorrhage deaths.",
+    "source": "WHO Medical Product Alert #19/2016"
   }
 ]

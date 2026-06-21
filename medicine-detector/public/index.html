@@ -1,805 +1,613 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Medicine Detector — AI Counterfeit Scanner</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>MediVerify — AI Medicine Authenticity Scanner</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#060d1a;--surface:#0e1a2d;--card:#111f35;--border:#1a2d47;
+      --text:#f0f6ff;--muted:#5a7a9e;--accent:#2563eb;
+      --green:#10b981;--yellow:#f59e0b;--red:#ef4444;
+      --green-bg:#022c22;--yellow-bg:#2d1a00;--red-bg:#2d0a0a;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-    :root {
-      --bg: #0a0f1e;
-      --surface: #111827;
-      --border: #1f2937;
-      --text: #f1f5f9;
-      --muted: #6b7280;
-      --accent: #3b82f6;
-      --accent-dim: #1d4ed820;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-      --red-dim: #7f1d1d30;
-    }
+    /* HEADER */
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .logo-pill{background:#1d3461;border:1px solid #2563eb40;border-radius:10px;padding:.4rem .7rem;font-size:1.4rem}
+    .hdr h1{font-size:1rem;font-weight:800;letter-spacing:-.01em}
+    .hdr p{font-size:.72rem;color:var(--muted)}
+    .live{margin-left:auto;display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--green);background:#02261a;border:1px solid #10b98130;border-radius:9999px;padding:.25rem .65rem;font-weight:600}
+    .dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 3rem;
-    }
+    main{max-width:680px;margin:0 auto;padding:1.5rem 1rem 4rem}
 
-    /* ── HEADER ── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .logo { font-size: 1.5rem; }
-    .header-text h1 { font-size: 1rem; font-weight: 700; }
-    .header-text p { font-size: 0.75rem; color: var(--muted); }
-    .live-badge {
-      margin-left: auto;
-      background: #10b98120;
-      color: var(--green);
-      border: 1px solid #10b98140;
-      border-radius: 9999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .live-dot {
-      width: 6px; height: 6px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
-    }
+    /* HERO */
+    .hero{text-align:center;padding:2rem 0 1.5rem}
+    .hero-tag{display:inline-block;background:#1d3461;border:1px solid #2563eb50;border-radius:9999px;font-size:.7rem;color:#60a5fa;padding:.25rem .75rem;margin-bottom:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+    .hero h2{font-size:2rem;font-weight:900;line-height:1.15;margin-bottom:.6rem;background:linear-gradient(135deg,#f0f6ff,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto;line-height:1.65}
+    .data-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem;margin-top:1rem}
+    .dpill{background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:.7rem;padding:.3rem .7rem;color:var(--muted)}
+    .dpill strong{color:var(--text)}
 
-    /* ── LAYOUT ── */
-    main { max-width: 640px; margin: 0 auto; padding: 1.25rem; }
+    /* UPLOAD CARD */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.25rem;margin-bottom:1rem}
 
-    .hero {
-      text-align: center;
-      padding: 1.5rem 0 1.25rem;
-    }
-    .hero h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.3; }
-    .hero p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; max-width: 420px; margin: 0 auto; }
+    .drop-zone{border:2px dashed var(--border);border-radius:.75rem;padding:2.25rem 1rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+    .drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:#1d346120}
+    .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .drop-icon{font-size:2.5rem;margin-bottom:.5rem}
+    .drop-zone h3{font-size:.95rem;font-weight:700;margin-bottom:.25rem}
+    .drop-zone p{font-size:.78rem;color:var(--muted)}
 
-    .source-badges {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.4rem;
-      margin-top: 0.875rem;
-    }
-    .badge {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.7rem;
-      padding: 0.25rem 0.6rem;
-      color: var(--muted);
-    }
-    .badge strong { color: var(--text); }
+    .cam-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
+    .cam-btn{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:.65rem;padding:.875rem .5rem;text-align:center;cursor:pointer;transition:all .2s;overflow:hidden}
+    .cam-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .cam-btn:hover{border-color:var(--accent);background:#1d346120}
+    .cam-btn .ci{font-size:1.5rem;display:block;margin-bottom:.2rem}
+    .cam-btn strong{font-size:.85rem;display:block}
+    .cam-btn span{font-size:.72rem;color:var(--muted)}
 
-    /* ── UPLOAD CARD ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
+    #preview-wrap{display:none;margin-top:.875rem}
+    #preview-img{width:100%;max-height:320px;object-fit:contain;border-radius:.65rem;border:1px solid var(--border)}
+    .preview-row{display:flex;gap:.5rem;margin-top:.6rem}
 
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: 0.75rem;
-      padding: 2rem 1rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-    .upload-zone:hover, .upload-zone.drag-over {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-    }
-    .upload-zone input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
-    }
-    .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .upload-zone h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.35rem; }
-    .upload-zone p { font-size: 0.8rem; color: var(--muted); }
+    .btn-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:.65rem;padding:.875rem;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s;letter-spacing:-.01em}
+    .btn-primary:hover:not(:disabled){background:#1d4ed8}
+    .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+    .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:.65rem;padding:.875rem .875rem;font-size:.85rem;cursor:pointer;transition:all .2s}
+    .btn-ghost:hover{color:var(--text);border-color:var(--muted)}
 
-    .camera-btns {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-    .cam-btn {
-      position: relative;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      padding: 0.875rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      overflow: hidden;
-    }
-    .cam-btn input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-    .cam-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
-    .cam-btn .icon { font-size: 1.5rem; display: block; margin-bottom: 0.25rem; }
-    .cam-btn span { font-size: 0.8rem; color: var(--muted); display: block; }
-    .cam-btn strong { font-size: 0.85rem; display: block; }
+    .error-box{background:#2d0a0a;border:1px solid #ef444440;border-radius:.65rem;padding:.875rem 1rem;color:#fca5a5;font-size:.875rem;display:none;margin-top:.75rem;line-height:1.5}
 
-    /* ── PREVIEW ── */
-    #preview-wrap { display: none; margin-top: 1rem; }
-    #preview-img {
-      width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-      border-radius: 0.5rem;
-      border: 1px solid var(--border);
-    }
-    .preview-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    .btn-primary {
-      flex: 1;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 0.65rem;
-      padding: 0.875rem;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-primary:hover:not(:disabled) { background: #2563eb; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-secondary {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 0.65rem;
-      padding: 0.875rem 1rem;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+    /* LOADING */
+    #loading{display:none;padding:2rem 1rem;text-align:center}
+    .spin{width:3rem;height:3rem;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-lbl{font-weight:700;margin-bottom:.5rem}
+    .step-list{display:flex;flex-direction:column;gap:.35rem;margin-top:.75rem;text-align:left}
+    .step{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--muted);padding:.35rem .75rem;border-radius:.4rem;transition:all .3s}
+    .step.active{background:#1d346130;color:#93c5fd}
+    .step.done{color:var(--green)}
+    .step-ic{width:1.1rem;text-align:center;flex-shrink:0}
 
-    /* ── LOADING ── */
-    #loading { display: none; text-align: center; padding: 2rem 1rem; }
-    .spinner-ring {
-      width: 3rem; height: 3rem;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-title { font-weight: 600; margin-bottom: 0.5rem; }
-    .steps { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; text-align: left; }
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-      padding: 0.4rem 0.75rem;
-      border-radius: 0.4rem;
-      transition: all 0.3s;
-    }
-    .step.active { background: var(--accent-dim); color: #93c5fd; }
-    .step.done { color: var(--green); }
-    .step-icon { width: 1.2rem; text-align: center; flex-shrink: 0; }
+    /* RESULTS */
+    #results{display:none}
 
-    /* ── ERROR ── */
-    .error-box {
-      background: var(--red-dim);
-      border: 1px solid #ef444440;
-      border-radius: 0.65rem;
-      padding: 0.875rem 1rem;
-      color: #fca5a5;
-      font-size: 0.875rem;
-      display: none;
-      margin-top: 0.75rem;
-    }
+    /* VERDICT HERO BANNER */
+    .verdict-hero{border-radius:1.25rem;padding:2rem 1.5rem;margin-bottom:1rem;text-align:center;position:relative;overflow:hidden}
+    .verdict-hero::before{content:"";position:absolute;inset:0;opacity:.07;background:radial-gradient(circle at 50% 0%,white,transparent 70%)}
+    .verdict-hero.authentic{background:var(--green-bg);border:1px solid #10b98140}
+    .verdict-hero.suspicious{background:var(--yellow-bg);border:1px solid #f59e0b40}
+    .verdict-hero.counterfeit{background:var(--red-bg);border:1px solid #ef444440}
 
-    /* ── RESULTS ── */
-    #results { display: none; }
+    .verdict-emoji{font-size:3.5rem;display:block;margin-bottom:.75rem}
+    .verdict-main{font-size:2.25rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;line-height:1}
+    .verdict-main.authentic{color:var(--green)}
+    .verdict-main.suspicious{color:var(--yellow)}
+    .verdict-main.counterfeit{color:var(--red)}
+    .verdict-sub{font-size:.85rem;opacity:.7;margin:.5rem 0 1rem;font-weight:500}
+    .score-row{display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-bottom:1rem}
+    .score-circle{width:72px;height:72px;border-radius:50%;border:3px solid currentColor;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .score-num{font-size:1.5rem;font-weight:900;line-height:1}
+    .score-lbl{font-size:.55rem;opacity:.6;text-transform:uppercase;letter-spacing:.05em}
+    .conf-badge{font-size:.72rem;font-weight:600;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:9999px;padding:.25rem .7rem}
+    .action-box{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:.65rem;padding:.75rem 1rem;font-size:.875rem;font-weight:600;line-height:1.5;margin-top:.25rem}
 
-    /* Verdict banner */
-    .verdict-banner {
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-    .verdict-banner.authentic    { background: #052e16; border: 1px solid #166534; }
-    .verdict-banner.suspicious   { background: #451a03; border: 1px solid #92400e; }
-    .verdict-banner.counterfeit  { background: #450a0a; border: 1px solid #991b1b; }
+    /* WHO ALERT */
+    .who-box{background:#1a0505;border:2px solid #ef444450;border-radius:1rem;padding:1.1rem 1.25rem;margin-bottom:1rem;display:none}
+    .who-box h4{color:#fca5a5;font-size:.9rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem}
+    .who-box p{font-size:.825rem;color:#fca5a5;line-height:1.55;opacity:.85}
+    .who-meta{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;font-size:.72rem;color:#f87171;font-weight:500}
 
-    .verdict-icon { font-size: 3rem; margin-bottom: 0.5rem; }
-    .verdict-score-ring {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      border: 4px solid currentColor;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 0.75rem;
-      font-size: 1.5rem;
-      font-weight: 800;
-    }
-    .verdict-label {
-      font-size: 1.4rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.35rem;
-    }
-    .verdict-confidence {
-      font-size: 0.8rem;
-      opacity: 0.7;
-      margin-bottom: 0.75rem;
-    }
-    .verdict-action {
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 0.6rem 1rem;
-      border-radius: 0.5rem;
-      background: rgba(255,255,255,0.1);
-      display: inline-block;
-      line-height: 1.4;
-    }
+    /* TABS */
+    .tabs{display:flex;gap:.35rem;margin-bottom:.75rem;border-bottom:1px solid var(--border);padding-bottom:0}
+    .tab{padding:.6rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;border-radius:.4rem .4rem 0 0;border:1px solid transparent;border-bottom:none;color:var(--muted);transition:all .2s;margin-bottom:-1px}
+    .tab.active{background:var(--card);border-color:var(--border);color:var(--text)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
 
-    /* Section titles */
-    .section-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 0.75rem;
-    }
+    /* SECTION LABEL */
+    .slabel{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.75rem}
 
-    /* Drug info grid */
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-    .info-item {
-      background: var(--bg);
-      border-radius: 0.5rem;
-      padding: 0.6rem 0.75rem;
-    }
-    .info-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.15rem; }
-    .info-value { font-size: 0.875rem; font-weight: 500; word-break: break-word; }
-    .info-item.full { grid-column: 1 / -1; }
+    /* INFO GRID */
+    .igrid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+    .iitem{background:var(--surface);border-radius:.5rem;padding:.6rem .75rem}
+    .iitem.full{grid-column:1/-1}
+    .ilabel{font-size:.68rem;color:var(--muted);margin-bottom:.15rem}
+    .ival{font-size:.875rem;font-weight:500;word-break:break-word}
 
-    /* WHO Alert */
-    .who-alert-box {
-      background: #450a0a;
-      border: 1px solid #7f1d1d;
-      border-radius: 0.65rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .who-alert-box h4 {
-      color: #fca5a5;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .who-alert-box p { font-size: 0.825rem; color: #fca5a5; line-height: 1.5; opacity: 0.85; }
-    .who-alert-box .alert-meta {
-      font-size: 0.75rem;
-      color: #f87171;
-      margin-top: 0.5rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
+    /* REGISTRIES */
+    .reg-grid{display:flex;flex-direction:column;gap:.4rem}
+    .reg-row{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border-radius:.5rem;background:var(--surface)}
+    .reg-flag{font-size:1.1rem}
+    .reg-info{flex:1}
+    .reg-name{font-size:.825rem;font-weight:600}
+    .reg-detail{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+    .reg-status{font-size:.75rem;font-weight:700;padding:.2rem .55rem;border-radius:9999px;flex-shrink:0}
+    .reg-yes{background:#02261a;color:var(--green);border:1px solid #10b98130}
+    .reg-no{background:#1a1a2e;color:var(--muted);border:1px solid var(--border)}
 
-    /* Red flags */
-    .flags-list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .flag {
-      display: flex;
-      gap: 0.625rem;
-      align-items: flex-start;
-      padding: 0.65rem 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-      line-height: 1.45;
-    }
-    .flag.critical { background: #450a0a; color: #fca5a5; }
-    .flag.high     { background: #431407; color: #fdba74; }
-    .flag.medium   { background: #3f2a0f; color: #fcd34d; }
-    .flag.low      { background: #0c1a2e; color: #93c5fd; }
-    .flag-icon { flex-shrink: 0; margin-top: 0.1rem; }
+    /* RED FLAGS */
+    .flags{display:flex;flex-direction:column;gap:.5rem}
+    .flag{display:flex;gap:.625rem;align-items:flex-start;padding:.65rem .75rem;border-radius:.5rem;font-size:.85rem;line-height:1.45}
+    .flag.critical{background:#1a0505;color:#fca5a5}
+    .flag.high{background:#1a0d05;color:#fdba74}
+    .flag.medium{background:#1a140a;color:#fcd34d}
+    .flag.low{background:#0d1a2e;color:#93c5fd}
+    .flag-ic{flex-shrink:0;margin-top:.1rem}
+    .no-flags{text-align:center;padding:1.25rem;color:var(--muted);font-size:.875rem}
 
-    /* Positive signals */
-    .positives-list { display: flex; flex-direction: column; gap: 0.4rem; }
-    .positive {
-      display: flex;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      color: #86efac;
-      line-height: 1.4;
-    }
-    .positive::before { content: "✓"; color: var(--green); flex-shrink: 0; }
+    /* POSITIVES */
+    .positives{display:flex;flex-direction:column;gap:.4rem}
+    .positive{display:flex;gap:.5rem;font-size:.85rem;color:#86efac;line-height:1.4;align-items:flex-start}
+    .positive::before{content:"✓";color:var(--green);flex-shrink:0}
 
-    /* Explanation */
-    .explanation {
-      font-size: 0.875rem;
-      line-height: 1.7;
-      color: #cbd5e1;
-      white-space: pre-wrap;
-    }
+    /* VISUAL BAR */
+    .vbar-wrap{margin-bottom:.875rem}
+    .vbar-row{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.35rem}
+    .vbar-track{height:8px;background:var(--border);border-radius:9999px;overflow:hidden}
+    .vbar-fill{height:100%;border-radius:9999px;transition:width 1.2s ease}
 
-    /* Guidance */
-    .guidance-list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .guidance-item {
-      display: flex;
-      gap: 0.625rem;
-      align-items: flex-start;
-      font-size: 0.875rem;
-      line-height: 1.5;
-      color: #93c5fd;
-    }
-    .guidance-item::before { content: "→"; color: var(--accent); flex-shrink: 0; }
+    /* ENCYCLOPEDIA */
+    .enc-fact{background:var(--surface);border-radius:.65rem;padding:.875rem;margin-bottom:.75rem}
+    .enc-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin-bottom:.4rem;display:flex;align-items:center;gap:.35rem}
+    .enc-text{font-size:.875rem;line-height:1.65;color:#cbd5e1}
+    .enc-list{list-style:none;display:flex;flex-direction:column;gap:.35rem}
+    .enc-list li{font-size:.85rem;color:#cbd5e1;line-height:1.45;display:flex;gap:.4rem}
+    .enc-list li::before{content:"•";color:var(--accent);flex-shrink:0}
+    .who-essential-badge{display:inline-flex;align-items:center;gap:.4rem;background:#02261a;border:1px solid #10b98130;border-radius:9999px;font-size:.75rem;font-weight:600;color:var(--green);padding:.3rem .75rem;margin-bottom:.75rem}
+    .mol-row{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+    .mol-tag{background:var(--surface);border:1px solid var(--border);border-radius:.4rem;font-size:.72rem;font-family:monospace;padding:.2rem .5rem;color:#93c5fd}
+    .enc-links{display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap}
+    .enc-link{font-size:.75rem;color:var(--accent);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:.4rem;padding:.3rem .65rem;transition:all .2s}
+    .enc-link:hover{border-color:var(--accent);color:#93c5fd}
 
-    /* FDA status pill */
-    .fda-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.25rem 0.65rem;
-      border-radius: 9999px;
-    }
-    .fda-verified  { background: #052e16; color: var(--green); border: 1px solid #166534; }
-    .fda-recalled  { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
-    .fda-not-found { background: #1c1917; color: var(--muted); border: 1px solid #44403c; }
+    /* GUIDANCE */
+    .guidance{display:flex;flex-direction:column;gap:.5rem}
+    .guidance-item{display:flex;gap:.625rem;font-size:.875rem;color:#93c5fd;line-height:1.5;align-items:flex-start}
+    .guidance-item::before{content:"→";color:var(--accent);flex-shrink:0}
 
-    /* Visual score bar */
-    .score-bar-wrap { margin-top: 0.25rem; }
-    .score-bar-track {
-      height: 6px;
-      background: var(--border);
-      border-radius: 9999px;
-      margin-top: 0.4rem;
-      overflow: hidden;
-    }
-    .score-bar-fill {
-      height: 100%;
-      border-radius: 9999px;
-      transition: width 1s ease;
-    }
+    /* DISCLAIMER */
+    .disclaimer{font-size:.73rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:.65rem;padding:.875rem;line-height:1.65}
 
-    /* Disclaimer */
-    .disclaimer {
-      font-size: 0.75rem;
-      color: var(--muted);
-      line-height: 1.6;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      padding: 0.875rem;
-    }
+    /* VISUAL DETAIL TAGS */
+    .vtags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+    .vtag{font-size:.72rem;padding:.2rem .55rem;border-radius:.35rem;line-height:1.4}
+    .vtag.bad{background:#2d0a0a;color:#fca5a5}
+    .vtag.good{background:#02261a;color:#86efac}
+    .vtag.warn{background:#2d1a00;color:#fcd34d}
 
-    /* ── MOBILE ── */
-    @media (max-width: 480px) {
-      .info-grid { grid-template-columns: 1fr; }
-      .camera-btns { grid-template-columns: 1fr; }
+    @media(max-width:480px){
+      .igrid{grid-template-columns:1fr}
+      .cam-row{grid-template-columns:1fr}
+      .hero h2{font-size:1.6rem}
+      .verdict-main{font-size:1.75rem}
     }
   </style>
 </head>
 <body>
-
 <header>
-  <div class="logo">💊</div>
-  <div class="header-text">
-    <h1>Medicine Detector</h1>
-    <p>AI-powered counterfeit scanner</p>
+  <div class="logo-pill">💊</div>
+  <div class="hdr">
+    <h1>MediVerify</h1>
+    <p>AI-Powered Medicine Authenticity Scanner</p>
   </div>
-  <div class="live-badge"><span class="live-dot"></span>Live</div>
+  <div class="live"><span class="dot"></span>Live</div>
 </header>
 
 <main>
   <div class="hero">
-    <h2>Is Your Medicine Real?</h2>
-    <p>Take a photo or upload your medicine packaging. Our AI cross-checks against FDA drug records, WHO counterfeit alerts, and performs visual forensic analysis.</p>
-    <div class="source-badges">
-      <span class="badge"><strong>FDA</strong> Drug Database</span>
-      <span class="badge"><strong>WHO</strong> Medical Alerts</span>
-      <span class="badge"><strong>AI</strong> Visual Forensics</span>
-      <span class="badge"><strong>Claude</strong> Vision</span>
+    <div class="hero-tag">Worldwide Coverage · Free · No Registration</div>
+    <h2>Is Your Medicine Real or Fake?</h2>
+    <p>Take a photo of any medicine packaging. Our AI cross-checks FDA drug records, WHO counterfeit alerts, Health Canada, and runs visual forensic analysis — in seconds.</p>
+    <div class="data-pills">
+      <span class="dpill"><strong>FDA</strong> Open API</span>
+      <span class="dpill"><strong>WHO</strong> Medical Alerts</span>
+      <span class="dpill"><strong>Health Canada</strong> DPD</span>
+      <span class="dpill"><strong>WHO</strong> Essential Medicines</span>
+      <span class="dpill"><strong>PubChem</strong> + Wikipedia</span>
+      <span class="dpill"><strong>Claude</strong> Vision AI</span>
     </div>
   </div>
 
-  <!-- Upload Card -->
+  <!-- UPLOAD -->
   <div class="card">
-    <div class="upload-zone" id="uploadZone">
-      <input type="file" id="fileInput" accept="image/*" />
-      <div class="upload-icon">📷</div>
-      <h3>Drop medicine photo here</h3>
-      <p>or use the buttons below</p>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*"/>
+      <div class="drop-icon">📷</div>
+      <h3>Drop your medicine photo here</h3>
+      <p>JPEG · PNG · WebP up to 20 MB</p>
     </div>
-
-    <div class="camera-btns">
+    <div class="cam-row">
       <label class="cam-btn">
-        <input type="file" accept="image/*" capture="environment" id="cameraInput" />
-        <span class="icon">📸</span>
+        <input type="file" accept="image/*" capture="environment" id="camInput"/>
+        <span class="ci">📸</span>
         <strong>Take Photo</strong>
-        <span>Use camera</span>
+        <span>Open camera</span>
       </label>
       <label class="cam-btn">
-        <input type="file" accept="image/*" id="galleryInput" />
-        <span class="icon">🖼️</span>
+        <input type="file" accept="image/*" id="gallInput"/>
+        <span class="ci">🖼️</span>
         <strong>Upload Image</strong>
-        <span>From gallery</span>
+        <span>From device</span>
       </label>
     </div>
-
     <div id="preview-wrap">
-      <img id="preview-img" alt="Medicine packaging preview" />
-      <div class="preview-actions">
-        <button class="btn-primary" id="analyzeBtn" onclick="submitAnalysis()">
-          🔍 Analyze Medicine
-        </button>
-        <button class="btn-secondary" onclick="clearImage()">✕</button>
+      <img id="preview-img" alt="Preview"/>
+      <div class="preview-row">
+        <button class="btn-primary" id="analyzeBtn" onclick="doAnalyze()">🔍 Analyze Medicine</button>
+        <button class="btn-ghost" onclick="clearImg()">✕</button>
       </div>
     </div>
-
-    <div class="error-box" id="errorBox"></div>
+    <div class="error-box" id="errBox"></div>
   </div>
 
-  <!-- Loading -->
+  <!-- LOADING -->
   <div id="loading" class="card">
-    <div class="spinner-ring"></div>
-    <div class="loading-title">Analyzing packaging...</div>
-    <div class="steps">
-      <div class="step" id="s1"><span class="step-icon">🔎</span> Extracting text & details from image</div>
-      <div class="step" id="s2"><span class="step-icon">💊</span> Checking FDA drug database</div>
-      <div class="step" id="s3"><span class="step-icon">🌍</span> Cross-referencing WHO counterfeit alerts</div>
-      <div class="step" id="s4"><span class="step-icon">🔬</span> Running visual forensic analysis</div>
-      <div class="step" id="s5"><span class="step-icon">⚖️</span> Generating authenticity verdict</div>
+    <div class="spin"></div>
+    <div class="loading-lbl">Analyzing your medicine...</div>
+    <div class="step-list">
+      <div class="step" id="sl1"><span class="step-ic">🔎</span>Reading packaging with Claude Vision</div>
+      <div class="step" id="sl2"><span class="step-ic">💊</span>Checking FDA drug database</div>
+      <div class="step" id="sl3"><span class="step-ic">🌍</span>Cross-referencing WHO alert database</div>
+      <div class="step" id="sl4"><span class="step-ic">🔬</span>Running visual forensic analysis</div>
+      <div class="step" id="sl5"><span class="step-ic">📚</span>Building medicine encyclopedia</div>
+      <div class="step" id="sl6"><span class="step-ic">⚖️</span>Generating authenticity verdict</div>
     </div>
   </div>
 
-  <!-- Results -->
+  <!-- RESULTS -->
   <div id="results">
 
-    <!-- Verdict Banner -->
-    <div class="verdict-banner" id="verdictBanner">
-      <div class="verdict-score-ring" id="scoreRing"></div>
-      <div class="verdict-label" id="verdictLabel"></div>
-      <div class="verdict-confidence" id="verdictConf"></div>
-      <div class="verdict-action" id="verdictAction"></div>
+    <!-- ① VERDICT HERO -->
+    <div class="verdict-hero" id="verdictHero">
+      <span class="verdict-emoji" id="vEmoji"></span>
+      <div class="verdict-main" id="vMain"></div>
+      <div class="verdict-sub" id="vSub"></div>
+      <div class="score-row">
+        <div class="score-circle" id="scoreCircle">
+          <span class="score-num" id="scoreNum"></span>
+          <span class="score-lbl">/ 100</span>
+        </div>
+        <div class="conf-badge" id="confBadge"></div>
+      </div>
+      <div class="action-box" id="actionBox"></div>
     </div>
 
-    <!-- WHO Alert (shown only if matched) -->
-    <div class="who-alert-box" id="whoAlertBox" style="display:none">
-      <h4>⚠️ WHO Medical Product Alert Match</h4>
-      <p id="whoAlertDesc"></p>
-      <div class="alert-meta" id="whoAlertMeta"></div>
+    <!-- ② WHO ALERT -->
+    <div class="who-box" id="whoBox">
+      <h4>🚨 WHO Medical Product Alert Match</h4>
+      <p id="whoDesc"></p>
+      <div class="who-meta" id="whoMeta"></div>
     </div>
 
-    <!-- Drug Info -->
+    <!-- ③ TABS: Details | Encyclopedia | Registries -->
     <div class="card">
-      <div class="section-label">Detected Product</div>
-      <div class="info-grid" id="drugInfoGrid"></div>
-      <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-        <span style="font-size:0.75rem; color:var(--muted)">FDA Status:</span>
-        <span class="fda-pill" id="fdaPill"></span>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('details',this)">🔬 Details</div>
+        <div class="tab" onclick="switchTab('encyclopedia',this)">📖 Encyclopedia</div>
+        <div class="tab" onclick="switchTab('registries',this)">🌐 Registries</div>
+      </div>
+
+      <!-- DETAILS TAB -->
+      <div class="tab-panel active" id="tab-details">
+        <div class="slabel">Detected Product</div>
+        <div class="igrid" id="drugGrid"></div>
+
+        <div style="margin-top:1rem">
+          <div class="slabel">Visual Forensic Analysis</div>
+          <div class="vbar-wrap">
+            <div class="vbar-row"><span>Print Quality</span><span id="psLabel"></span></div>
+            <div class="vbar-track"><div class="vbar-fill" id="psBar" style="width:0"></div></div>
+          </div>
+          <div class="vtags" id="vtags"></div>
+        </div>
+
+        <div style="margin-top:1rem" id="flagsSection">
+          <div class="slabel">Red Flags</div>
+          <div class="flags" id="flagsList"></div>
+        </div>
+
+        <div style="margin-top:1rem" id="posSection" style="display:none">
+          <div class="slabel">Positive Signals</div>
+          <div class="positives" id="posList"></div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <div class="slabel">Detailed Verdict Explanation</div>
+          <div class="enc-fact"><div class="enc-text" id="explanBox"></div></div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <div class="slabel">What To Do Now</div>
+          <div class="guidance" id="guidList"></div>
+        </div>
+      </div>
+
+      <!-- ENCYCLOPEDIA TAB -->
+      <div class="tab-panel" id="tab-encyclopedia">
+        <div id="whoEssentialBadge" style="display:none" class="who-essential-badge">🌍 WHO Essential Medicine</div>
+        <div id="molRow" class="mol-row" style="display:none"></div>
+
+        <div class="enc-fact">
+          <div class="enc-label">💊 What is it?</div>
+          <div class="enc-text" id="encWhat"></div>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">🔬 How it works</div>
+          <div class="enc-text" id="encMech"></div>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">🧪 Discovery &amp; History</div>
+          <div class="enc-text" id="encHist"></div>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">✅ Medical Uses</div>
+          <ul class="enc-list" id="encUses"></ul>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">⚠️ Key Warnings</div>
+          <ul class="enc-list" id="encWarn"></ul>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">💡 Side Effects</div>
+          <ul class="enc-list" id="encSide"></ul>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">🌟 Interesting Facts</div>
+          <ul class="enc-list" id="encFacts"></ul>
+        </div>
+        <div class="enc-fact">
+          <div class="enc-label">🏷️ Brand Names Worldwide</div>
+          <div class="vtags" id="encBrands"></div>
+        </div>
+        <div class="enc-links" id="encLinks"></div>
+      </div>
+
+      <!-- REGISTRIES TAB -->
+      <div class="tab-panel" id="tab-registries">
+        <div class="slabel">Global Database Checks</div>
+        <div class="reg-grid" id="regGrid"></div>
+        <div style="margin-top:.75rem;font-size:.78rem;color:var(--muted);line-height:1.6">
+          Medicine registries verify that a drug is officially approved for sale. Finding a medicine in multiple registries is a positive authenticity signal. Not finding it does not definitively mean it is fake — database coverage varies.
+        </div>
       </div>
     </div>
 
-    <!-- Visual Analysis -->
-    <div class="card">
-      <div class="section-label">Visual Forensic Analysis</div>
-      <div class="score-bar-wrap">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-          <span>Print Quality</span>
-          <span id="printScoreLabel"></span>
-        </div>
-        <div class="score-bar-track">
-          <div class="score-bar-fill" id="printScoreBar" style="width:0%"></div>
-        </div>
-      </div>
-      <div style="margin-top:1rem;" id="visualDetails"></div>
-    </div>
-
-    <!-- Red Flags -->
-    <div class="card" id="redFlagsCard">
-      <div class="section-label">Red Flags</div>
-      <div class="flags-list" id="flagsList"></div>
-    </div>
-
-    <!-- Positive Signals -->
-    <div class="card" id="positivesCard" style="display:none">
-      <div class="section-label">Positive Signals</div>
-      <div class="positives-list" id="positivesList"></div>
-    </div>
-
-    <!-- Explanation -->
-    <div class="card">
-      <div class="section-label">Detailed Analysis</div>
-      <div class="explanation" id="explanationBox"></div>
-    </div>
-
-    <!-- Verification Guidance -->
-    <div class="card">
-      <div class="section-label">What To Do Now</div>
-      <div class="guidance-list" id="guidanceList"></div>
-    </div>
-
-    <!-- Disclaimer -->
     <div class="disclaimer" id="disclaimerBox"></div>
 
-    <div style="text-align:center; margin-top:1.5rem;">
-      <button class="btn-secondary" onclick="clearImage(); document.getElementById('results').style.display='none'; window.scrollTo({top:0,behavior:'smooth'})">
-        Analyze Another Medicine
-      </button>
+    <div style="text-align:center;margin-top:1.25rem">
+      <button class="btn-ghost" onclick="resetApp()">← Analyze Another Medicine</button>
     </div>
   </div>
 </main>
 
 <script>
-  let selectedFile = null;
-  let stepTimer = null;
-  let currentStep = 0;
+let currentFile = null;
+let stepT = null, stepI = 0;
 
-  // Wire all three inputs to the same handler
-  ["fileInput", "cameraInput", "galleryInput"].forEach(id => {
-    document.getElementById(id).addEventListener("change", e => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
-    });
+['fileInput','camInput','gallInput'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',e=>{
+    const f=e.target.files?.[0];if(f)loadFile(f);
   });
+});
 
-  // Drag & drop
-  const zone = document.getElementById("uploadZone");
-  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
-  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
-  zone.addEventListener("drop", e => {
-    e.preventDefault();
-    zone.classList.remove("drag-over");
-    const file = e.dataTransfer?.files?.[0];
-    if (file && file.type.startsWith("image/")) handleFile(file);
-  });
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const f=e.dataTransfer?.files?.[0];
+  if(f&&f.type.startsWith('image/'))loadFile(f);
+});
 
-  function handleFile(file) {
-    selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById("preview-img").src = e.target.result;
-      document.getElementById("preview-wrap").style.display = "block";
-      document.getElementById("results").style.display = "none";
-      document.getElementById("errorBox").style.display = "none";
-    };
-    reader.readAsDataURL(file);
+function loadFile(f){
+  currentFile=f;
+  const r=new FileReader();
+  r.onload=e=>{
+    document.getElementById('preview-img').src=e.target.result;
+    document.getElementById('preview-wrap').style.display='block';
+    document.getElementById('results').style.display='none';
+    document.getElementById('errBox').style.display='none';
+  };
+  r.readAsDataURL(f);
+}
+
+function clearImg(){
+  currentFile=null;
+  document.getElementById('preview-wrap').style.display='none';
+  document.getElementById('preview-img').src='';
+  ['fileInput','camInput','gallInput'].forEach(id=>document.getElementById(id).value='');
+}
+
+function resetApp(){
+  clearImg();
+  document.getElementById('results').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function stepAnim(){
+  const ids=['sl1','sl2','sl3','sl4','sl5','sl6'];
+  stepI=0;
+  ids.forEach(id=>document.getElementById(id).className='step');
+  stepT=setInterval(()=>{
+    if(stepI>0)document.getElementById(ids[stepI-1]).className='step done';
+    if(stepI<ids.length){document.getElementById(ids[stepI]).className='step active';stepI++;}
+    else clearInterval(stepT);
+  },2000);
+}
+
+async function doAnalyze(){
+  if(!currentFile)return;
+  const btn=document.getElementById('analyzeBtn');
+  const err=document.getElementById('errBox');
+  err.style.display='none';
+  document.getElementById('results').style.display='none';
+  btn.disabled=true;
+  document.getElementById('loading').style.display='block';
+  stepAnim();
+  const fd=new FormData();
+  fd.append('image',currentFile);
+  try{
+    const res=await fetch('/api/analyze',{method:'POST',body:fd});
+    const data=await res.json();
+    clearInterval(stepT);
+    ['sl1','sl2','sl3','sl4','sl5','sl6'].forEach(id=>document.getElementById(id).className='step done');
+    if(!res.ok||!data.success)throw new Error(data.error||'Analysis failed');
+    render(data.result);
+  }catch(e){
+    clearInterval(stepT);
+    err.textContent=e.message;
+    err.style.display='block';
+  }finally{
+    btn.disabled=false;
+    document.getElementById('loading').style.display='none';
+  }
+}
+
+function vc(v){
+  if(v==='authentic'||v==='likely-authentic')return'authentic';
+  if(v==='suspicious')return'suspicious';
+  return'counterfeit';
+}
+function ve(v){
+  return{authentic:'✅','likely-authentic':'✅',suspicious:'⚠️','likely-counterfeit':'🚨',counterfeit:'🚫'}[v]||'❓';
+}
+function sc(s){return s>=70?'var(--green)':s>=45?'var(--yellow)':'var(--red)'}
+function fi(sev){return{critical:'🚫',high:'⚠️',medium:'⚡',low:'ℹ️'}[sev]||'•'}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function render(r){
+  const {packaging,fdaRecord,whoAlertMatch,globalRegistries,visualAnalysis,verdict,encyclopedia,verificationGuidance,disclaimer}=r;
+
+  // ─ VERDICT HERO ─
+  const cls=vc(verdict.verdict);
+  const hero=document.getElementById('verdictHero');
+  hero.className='verdict-hero '+cls;
+  document.getElementById('vEmoji').textContent=ve(verdict.verdict);
+  const vm=document.getElementById('vMain');
+  vm.textContent=verdict.verdict.replace(/-/g,' ');
+  vm.className='verdict-main '+cls;
+  document.getElementById('vSub').textContent=`Authenticity score ${verdict.score}/100 · Confidence: ${verdict.confidence}`;
+  const sc_=sc(verdict.score);
+  const circle=document.getElementById('scoreCircle');
+  circle.style.color=sc_;circle.style.borderColor=sc_;
+  document.getElementById('scoreNum').textContent=verdict.score;
+  document.getElementById('confBadge').textContent=verdict.confidence+' confidence';
+  document.getElementById('actionBox').textContent=verdict.immediateAction;
+
+  // ─ WHO ALERT ─
+  if(whoAlertMatch){
+    document.getElementById('whoBox').style.display='block';
+    document.getElementById('whoDesc').textContent=whoAlertMatch.description;
+    document.getElementById('whoMeta').innerHTML=
+      `<span>Alert ID: ${whoAlertMatch.id}</span><span>Date: ${whoAlertMatch.alertDate}</span>`+
+      `<span>Type: ${whoAlertMatch.alertType}</span><span>Countries: ${whoAlertMatch.countries.slice(0,3).join(', ')}</span>`;
   }
 
-  function clearImage() {
-    selectedFile = null;
-    document.getElementById("preview-wrap").style.display = "none";
-    document.getElementById("preview-img").src = "";
-    ["fileInput","cameraInput","galleryInput"].forEach(id => document.getElementById(id).value = "");
+  // ─ DRUG GRID ─
+  const fields=[
+    ['Drug Name',packaging.drugName],['Manufacturer',packaging.manufacturer],
+    ['Batch Number',packaging.batchNumber||'Not detected'],['Expiry Date',packaging.expiryDate||'Not detected'],
+    ['Strength',packaging.strength||'Not detected'],['Country',packaging.countryOfOrigin||'Not detected'],
+    ['Reg. Number',packaging.registrationNumber||'Not detected'],['Dosage Form',packaging.dosageForm||'Not detected'],
+  ];
+  document.getElementById('drugGrid').innerHTML=fields.map(([l,v])=>
+    `<div class="iitem"><div class="ilabel">${l}</div><div class="ival">${v}</div></div>`).join('');
+
+  // ─ VISUAL BAR ─
+  const ps=visualAnalysis.printQualityScore;
+  document.getElementById('psLabel').textContent=ps+'/100';
+  const bar=document.getElementById('psBar');
+  bar.style.width=ps+'%';bar.style.background=sc(ps);
+
+  // Visual tags
+  const tags=[];
+  visualAnalysis.spellingErrors.forEach(e=>tags.push(`<span class="vtag bad">Spelling: ${e}</span>`));
+  visualAnalysis.fontInconsistencies.forEach(f=>tags.push(`<span class="vtag warn">${f}</span>`));
+  visualAnalysis.authenticElements.forEach(a=>tags.push(`<span class="vtag good">${a}</span>`));
+  visualAnalysis.suspiciousElements.slice(0,3).forEach(s=>tags.push(`<span class="vtag bad">${s}</span>`));
+  document.getElementById('vtags').innerHTML=tags.join('')||'<span class="vtag good">No notable anomalies</span>';
+
+  // ─ RED FLAGS ─
+  if(verdict.redFlags.length===0){
+    document.getElementById('flagsList').innerHTML='<div class="no-flags">No red flags detected ✓</div>';
+  }else{
+    document.getElementById('flagsList').innerHTML=verdict.redFlags.map(f=>
+      `<div class="flag ${f.severity}"><span class="flag-ic">${fi(f.severity)}</span><span>${f.description}</span></div>`
+    ).join('');
   }
 
-  function animateSteps() {
-    const steps = ["s1","s2","s3","s4","s5"];
-    currentStep = 0;
-    steps.forEach(id => document.getElementById(id).className = "step");
-    stepTimer = setInterval(() => {
-      if (currentStep > 0) document.getElementById(steps[currentStep-1]).className = "step done";
-      if (currentStep < steps.length) {
-        document.getElementById(steps[currentStep]).className = "step active";
-        currentStep++;
-      } else clearInterval(stepTimer);
-    }, 2200);
+  // ─ POSITIVES ─
+  if(verdict.positiveSignals.length>0){
+    document.getElementById('posSection').style.display='block';
+    document.getElementById('posList').innerHTML=verdict.positiveSignals
+      .map(s=>`<div class="positive">${s}</div>`).join('');
   }
 
-  async function submitAnalysis() {
-    if (!selectedFile) return;
-    const btn = document.getElementById("analyzeBtn");
-    const errorBox = document.getElementById("errorBox");
-    errorBox.style.display = "none";
-    document.getElementById("results").style.display = "none";
+  // ─ EXPLANATION ─
+  document.getElementById('explanBox').textContent=verdict.detailedExplanation;
 
-    const formData = new FormData();
-    formData.append("image", selectedFile);
+  // ─ GUIDANCE ─
+  document.getElementById('guidList').innerHTML=verificationGuidance
+    .map(g=>`<div class="guidance-item">${g}</div>`).join('');
 
-    btn.disabled = true;
-    document.getElementById("loading").style.display = "block";
-    animateSteps();
-
-    try {
-      const res = await fetch("/api/analyze", { method: "POST", body: formData });
-      const data = await res.json();
-
-      clearInterval(stepTimer);
-      ["s1","s2","s3","s4","s5"].forEach(id => document.getElementById(id).className = "step done");
-
-      if (!res.ok || !data.success) throw new Error(data.error || "Analysis failed");
-
-      renderResults(data.result);
-    } catch (err) {
-      clearInterval(stepTimer);
-      errorBox.textContent = err.message;
-      errorBox.style.display = "block";
-    } finally {
-      btn.disabled = false;
-      document.getElementById("loading").style.display = "none";
-    }
+  // ─ ENCYCLOPEDIA ─
+  const enc=encyclopedia;
+  if(enc.isWHOEssential){
+    const b=document.getElementById('whoEssentialBadge');
+    b.style.display='inline-flex';
+    b.textContent=`🌍 WHO Essential Medicine — ${enc.essentialMedicineCategory||''}`;
   }
-
-  function verdictClass(verdict) {
-    if (verdict === "authentic" || verdict === "likely-authentic") return "authentic";
-    if (verdict === "suspicious") return "suspicious";
-    return "counterfeit";
+  if(enc.molecularFormula||enc.iupacName){
+    const mr=document.getElementById('molRow');
+    mr.style.display='flex';
+    if(enc.molecularFormula)mr.innerHTML+=`<span class="mol-tag">${enc.molecularFormula}</span>`;
+    if(enc.iupacName)mr.innerHTML+=`<span class="mol-tag" style="font-size:.65rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${enc.iupacName}">${enc.iupacName.slice(0,40)}${enc.iupacName.length>40?'…':''}</span>`;
   }
+  document.getElementById('encWhat').textContent=enc.whatIsIt;
+  document.getElementById('encMech').textContent=enc.mechanismOfAction;
+  document.getElementById('encHist').textContent=enc.discoveryAndHistory;
+  document.getElementById('encUses').innerHTML=enc.medicalUses.map(u=>`<li>${u}</li>`).join('');
+  document.getElementById('encWarn').innerHTML=enc.keyWarnings.map(w=>`<li>${w}</li>`).join('');
+  document.getElementById('encSide').innerHTML=enc.sideEffects.map(s=>`<li>${s}</li>`).join('');
+  document.getElementById('encFacts').innerHTML=enc.interestingFacts.map(f=>`<li>${f}</li>`).join('');
+  document.getElementById('encBrands').innerHTML=enc.commonBrandNames
+    .map(b=>`<span class="vtag" style="background:var(--surface);color:var(--muted)">${b}</span>`).join('');
 
-  function verdictIcon(verdict) {
-    const icons = { authentic: "✅", "likely-authentic": "✅", suspicious: "⚠️", "likely-counterfeit": "🚨", counterfeit: "🚫" };
-    return icons[verdict] || "❓";
-  }
+  const links=[];
+  if(enc.wikipediaUrl)links.push(`<a class="enc-link" href="${enc.wikipediaUrl}" target="_blank" rel="noopener">📖 Wikipedia</a>`);
+  if(enc.pubchemUrl)links.push(`<a class="enc-link" href="${enc.pubchemUrl}" target="_blank" rel="noopener">🔬 PubChem</a>`);
+  document.getElementById('encLinks').innerHTML=links.join('');
 
-  function scoreColor(score) {
-    if (score >= 70) return "var(--green)";
-    if (score >= 45) return "var(--yellow)";
-    return "var(--red)";
-  }
-
-  function flagIcon(severity) {
-    return { critical: "🚫", high: "⚠️", medium: "⚡", low: "ℹ️" }[severity] || "•";
-  }
-
-  function renderResults(r) {
-    const { packaging, fdaRecord, whoAlertMatch, visualAnalysis, verdict, verificationGuidance, disclaimer } = r;
-
-    // Verdict banner
-    const vc = verdictClass(verdict.verdict);
-    const banner = document.getElementById("verdictBanner");
-    banner.className = `verdict-banner ${vc}`;
-    const color = scoreColor(verdict.score);
-    document.getElementById("scoreRing").innerHTML = verdict.score;
-    document.getElementById("scoreRing").style.color = color;
-    document.getElementById("scoreRing").style.borderColor = color;
-    document.getElementById("verdictLabel").textContent = verdict.verdict.replace(/-/g," ");
-    document.getElementById("verdictLabel").style.color = color;
-    document.getElementById("verdictConf").textContent = `Confidence: ${verdict.confidence}`;
-    document.getElementById("verdictAction").textContent = verdict.immediateAction;
-
-    // WHO Alert
-    if (whoAlertMatch) {
-      document.getElementById("whoAlertBox").style.display = "block";
-      document.getElementById("whoAlertDesc").textContent = whoAlertMatch.description;
-      document.getElementById("whoAlertMeta").innerHTML =
-        `<span>Alert: ${whoAlertMatch.id}</span><span>Date: ${whoAlertMatch.alertDate}</span><span>Type: ${whoAlertMatch.alertType}</span>`;
-    } else {
-      document.getElementById("whoAlertBox").style.display = "none";
-    }
-
-    // Drug info grid
-    const fields = [
-      ["Drug Name", packaging.drugName],
-      ["Manufacturer", packaging.manufacturer],
-      ["Batch Number", packaging.batchNumber || "Not detected"],
-      ["Expiry Date", packaging.expiryDate || "Not detected"],
-      ["Strength", packaging.strength || "Not detected"],
-      ["Country", packaging.countryOfOrigin || "Not detected"],
-      ["Reg. Number", packaging.registrationNumber || "Not detected"],
-      ["Dosage Form", packaging.dosageForm || "Not detected"],
-    ];
-    document.getElementById("drugInfoGrid").innerHTML = fields.map(([label, val]) => `
-      <div class="info-item">
-        <div class="info-label">${label}</div>
-        <div class="info-value">${val}</div>
+  // ─ REGISTRIES ─
+  document.getElementById('regGrid').innerHTML=globalRegistries.map(reg=>`
+    <div class="reg-row">
+      <span class="reg-flag">${reg.flag}</span>
+      <div class="reg-info">
+        <div class="reg-name">${reg.name}</div>
+        <div class="reg-detail">${reg.details||reg.status||''}</div>
       </div>
-    `).join("");
+      <span class="reg-status ${reg.found?'reg-yes':'reg-no'}">${reg.found?'✓ Found':'✗ Not found'}</span>
+    </div>`).join('');
 
-    // FDA pill
-    const fdaEl = document.getElementById("fdaPill");
-    if (fdaRecord.hasRecalls) {
-      fdaEl.className = "fda-pill fda-recalled";
-      fdaEl.textContent = "⚠ Active Recall";
-    } else if (fdaRecord.found) {
-      fdaEl.className = "fda-pill fda-verified";
-      fdaEl.textContent = "✓ Found in FDA Database";
-    } else {
-      fdaEl.className = "fda-pill fda-not-found";
-      fdaEl.textContent = "Not found in FDA database";
-    }
+  // ─ DISCLAIMER ─
+  document.getElementById('disclaimerBox').textContent=disclaimer;
 
-    // Visual score bar
-    const ps = visualAnalysis.printQualityScore;
-    document.getElementById("printScoreLabel").textContent = `${ps}/100`;
-    const bar = document.getElementById("printScoreBar");
-    bar.style.width = ps + "%";
-    bar.style.background = scoreColor(ps);
-
-    // Visual details
-    const va = visualAnalysis;
-    const details = [];
-    if (va.spellingErrors.length) details.push(`<p style="font-size:0.825rem;color:#fca5a5;margin-bottom:0.35rem">⚠ Spelling errors: ${va.spellingErrors.join("; ")}</p>`);
-    if (va.fontInconsistencies.length) details.push(`<p style="font-size:0.825rem;color:#fdba74;margin-bottom:0.35rem">⚡ Font issues: ${va.fontInconsistencies.join("; ")}</p>`);
-    if (va.authenticElements.length) details.push(`<p style="font-size:0.825rem;color:#86efac;margin-bottom:0.35rem">✓ Security features: ${va.authenticElements.join(", ")}</p>`);
-    document.getElementById("visualDetails").innerHTML = details.join("") || `<p style="font-size:0.825rem;color:var(--muted)">No notable visual anomalies detected.</p>`;
-
-    // Red flags
-    const flagsList = document.getElementById("flagsList");
-    if (verdict.redFlags.length === 0) {
-      document.getElementById("redFlagsCard").style.display = "none";
-    } else {
-      document.getElementById("redFlagsCard").style.display = "block";
-      flagsList.innerHTML = verdict.redFlags.map(f => `
-        <div class="flag ${f.severity}">
-          <span class="flag-icon">${flagIcon(f.severity)}</span>
-          <span>${f.description}</span>
-        </div>
-      `).join("");
-    }
-
-    // Positive signals
-    if (verdict.positiveSignals.length > 0) {
-      document.getElementById("positivesCard").style.display = "block";
-      document.getElementById("positivesList").innerHTML = verdict.positiveSignals
-        .map(s => `<div class="positive">${s}</div>`).join("");
-    } else {
-      document.getElementById("positivesCard").style.display = "none";
-    }
-
-    // Explanation
-    document.getElementById("explanationBox").textContent = verdict.detailedExplanation;
-
-    // Guidance
-    document.getElementById("guidanceList").innerHTML = verificationGuidance
-      .map(g => `<div class="guidance-item">${g}</div>`).join("");
-
-    // Disclaimer
-    document.getElementById("disclaimerBox").textContent = disclaimer;
-
-    // Show results
-    document.getElementById("results").style.display = "block";
-    document.getElementById("results").scrollIntoView({ behavior: "smooth" });
-  }
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
 </script>
 </body>
 </html>
