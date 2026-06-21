@@ -218,13 +218,91 @@
     .auth-link.phone{background:#012a18;color:#25d366;border-color:#25d36640}
     .auth-link.sms{background:#0a1a2e;color:#60a5fa;border-color:#2563eb40}
 
+    /* ── CONFIDENCE BREAKDOWN ── */
+    .breakdown-card{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.1rem 1.25rem;margin-bottom:1rem}
+    .breakdown-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.875rem}
+    .bk-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem}
+    .bk-label{font-size:.8rem;width:130px;flex-shrink:0;color:#cbd5e1}
+    .bk-bar-track{flex:1;height:6px;background:var(--border);border-radius:9999px;overflow:hidden}
+    .bk-bar-fill{height:100%;border-radius:9999px;transition:width 1s ease}
+    .bk-val{font-size:.78rem;font-weight:700;width:52px;text-align:right;flex-shrink:0}
+    .bk-delta{font-size:.72rem;width:38px;text-align:right;flex-shrink:0;font-weight:600}
+    .bk-delta.pos{color:var(--green)}
+    .bk-delta.neg{color:var(--red)}
+    .bk-delta.neu{color:var(--muted)}
+
+    /* ── BATCH MODE ── */
+    .batch-toggle-row{display:flex;align-items:center;justify-content:space-between;margin-top:.875rem;padding-top:.75rem;border-top:1px solid var(--border)}
+    .batch-toggle-lbl{font-size:.82rem;color:var(--muted)}
+    .toggle-switch{position:relative;width:40px;height:22px;cursor:pointer}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-track{position:absolute;inset:0;background:var(--border);border-radius:9999px;transition:.3s}
+    .toggle-switch input:checked+.toggle-track{background:var(--accent)}
+    .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
+    .toggle-switch input:checked~.toggle-thumb{left:21px}
+    .batch-queue{display:none;margin-top:.875rem}
+    .batch-queue.show{display:block}
+    .batch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem}
+    .batch-thumb{position:relative;aspect-ratio:1;border-radius:.5rem;overflow:hidden;border:1px solid var(--border);cursor:pointer}
+    .batch-thumb img{width:100%;height:100%;object-fit:cover}
+    .batch-thumb-rm{position:absolute;top:3px;right:3px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .batch-add{aspect-ratio:1;border:2px dashed var(--border);border-radius:.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;color:var(--muted);gap:.35rem;transition:all .2s}
+    .batch-add:hover{border-color:var(--accent);color:var(--text)}
+    .batch-table-wrap{overflow-x:auto;border-radius:.65rem;border:1px solid var(--border)}
+    .batch-table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .batch-table th{text-align:left;padding:.5rem .75rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)}
+    .batch-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border)}
+    .batch-table tr:last-child td{border-bottom:none}
+    .batch-table tr:hover td{background:var(--surface)}
+    .batch-badge{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:9999px;border:1px solid}
+    .batch-badge.authentic{background:var(--green-bg);color:var(--green);border-color:#10b98130}
+    .batch-badge.suspicious{background:var(--yellow-bg);color:var(--yellow);border-color:#f59e0b30}
+    .batch-badge.counterfeit{background:var(--red-bg);color:var(--red);border-color:#ef444430}
+
+    /* ── HISTORY ── */
+    .history-section{margin-bottom:1rem}
+    .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+    .history-header h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .history-clear{font-size:.72rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:.2rem .4rem}
+    .history-clear:hover{color:var(--red)}
+    .history-scroll{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:none}
+    .history-scroll::-webkit-scrollbar{display:none}
+    .hist-item{flex-shrink:0;width:130px;background:var(--card);border:1px solid var(--border);border-radius:.65rem;padding:.65rem;cursor:pointer;transition:all .2s}
+    .hist-item:hover{border-color:var(--accent)}
+    .hist-item.authentic{border-left:3px solid var(--green)}
+    .hist-item.suspicious{border-left:3px solid var(--yellow)}
+    .hist-item.counterfeit{border-left:3px solid var(--red)}
+    .hist-drug{font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem}
+    .hist-score{font-size:.72rem;color:var(--muted)}
+    .hist-time{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+
+    /* ── PDF / PRINT ── */
+    .pdf-btn{display:inline-flex;align-items:center;gap:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:.65rem;padding:.6rem 1rem;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
+    .pdf-btn:hover{border-color:var(--accent);color:#60a5fa}
+    @media print{
+      header,.hero,.card:has(#dropZone),.card:has(#loading),.history-section,
+      .breakdown-card .batch-toggle-row,#langMenu,.wa-banner,
+      .btn-ghost,.pdf-btn-row,@page{margin:.5in}
+      body{background:#fff;color:#000}
+      .verdict-hero.authentic{background:#d1fae5;border:2px solid #10b981}
+      .verdict-hero.suspicious{background:#fef3c7;border:2px solid #f59e0b}
+      .verdict-hero.counterfeit{background:#fee2e2;border:2px solid #ef4444}
+      .verdict-main.authentic{color:#059669}
+      .verdict-main.suspicious{color:#d97706}
+      .verdict-main.counterfeit{color:#dc2626}
+      .card,.enc-fact,.flag,.reg-row,.who-box{border:1px solid #ccc;background:#f9f9f9}
+      .tab-panel{display:block!important}
+      .tabs{display:none}
+      #results{display:block!important}
+    }
+
     @media(max-width:480px){
       .igrid{grid-template-columns:1fr}
       .cam-row{grid-template-columns:1fr}
       .hero h2{font-size:1.6rem}
       .verdict-main{font-size:1.75rem}
       .lang-grid{grid-template-columns:1fr}
-      .wa-banner{flex-direction:column;gap:.5rem}
+      .batch-grid{grid-template-columns:repeat(2,1fr)}
     }
   </style>
 </head>
@@ -264,14 +342,13 @@
     </div>
   </div>
 
-  <!-- WHATSAPP BANNER -->
-  <div class="wa-banner">
-    <div class="wa-icon">💬</div>
-    <div class="wa-text">
-      <h3>Use on WhatsApp — works in any language</h3>
-      <p>In Nigeria, Kenya, India, Bangladesh, and 50+ countries — just send a photo of your medicine to our WhatsApp number. Get results in Hausa, Swahili, Hindi, Urdu, Bengali, French, Arabic &amp; more.</p>
-      <span class="wa-number">WhatsApp: configure in .env → TWILIO_WHATSAPP_NUMBER</span>
+  <!-- HISTORY -->
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="history-header">
+      <h3>📋 Recent Scans</h3>
+      <button class="history-clear" onclick="clearHistory()">Clear all</button>
     </div>
+    <div class="history-scroll" id="historyScroll"></div>
   </div>
 
   <!-- UPLOAD -->
@@ -303,6 +380,38 @@
         <button class="btn-ghost" onclick="clearImg()">✕</button>
       </div>
     </div>
+
+    <!-- BATCH MODE -->
+    <div class="batch-toggle-row">
+      <span class="batch-toggle-lbl">📦 Scan multiple medicines at once</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="batchToggle" onchange="toggleBatchMode(this.checked)"/>
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="batch-queue" id="batchQueue">
+      <div class="batch-grid" id="batchGrid">
+        <label class="batch-add" title="Add image">
+          <input type="file" accept="image/*" multiple style="display:none" id="batchInput" onchange="addBatchFiles(this.files)"/>
+          <span style="font-size:1.5rem">+</span>
+          <span>Add Photos</span>
+        </label>
+      </div>
+      <button class="btn-primary" id="batchRunBtn" onclick="runBatch()" disabled>🔍 Analyze All (<span id="batchCount">0</span>)</button>
+    </div>
+
+    <!-- BATCH RESULTS TABLE -->
+    <div id="batchResults" style="display:none;margin-top:.875rem">
+      <div class="slabel">Batch Scan Results</div>
+      <div class="batch-table-wrap">
+        <table class="batch-table">
+          <thead><tr><th>#</th><th>Drug</th><th>Verdict</th><th>Score</th><th>Key Flag</th></tr></thead>
+          <tbody id="batchTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="error-box" id="errBox"></div>
   </div>
 
@@ -338,7 +447,13 @@
       <div class="action-box" id="actionBox"></div>
     </div>
 
-    <!-- ② WHO ALERT -->
+    <!-- ② CONFIDENCE BREAKDOWN -->
+    <div class="breakdown-card" id="breakdownCard">
+      <div class="breakdown-title">Score Breakdown — What drove this verdict</div>
+      <div id="breakdownRows"></div>
+    </div>
+
+    <!-- ③ WHO ALERT -->
     <div class="who-box" id="whoBox">
       <h4>🚨 WHO Medical Product Alert Match</h4>
       <p id="whoDesc"></p>
@@ -456,7 +571,8 @@
 
     <div class="disclaimer" id="disclaimerBox"></div>
 
-    <div style="text-align:center;margin-top:1.25rem">
+    <div class="pdf-btn-row" style="display:flex;gap:.6rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap">
+      <button class="pdf-btn" onclick="exportPDF()">📄 Download Report (PDF)</button>
       <button class="btn-ghost" onclick="resetApp()">← Analyze Another Medicine</button>
     </div>
   </div>
@@ -466,6 +582,189 @@
 // ── State ──
 let currentFile=null, stepT=null, stepI=0;
 let currentLang='en';
+let batchFiles=[], batchMode=false;
+let lastResult=null;
+
+// ── HISTORY (localStorage) ──
+const HIST_KEY='mediverify_history';
+function saveToHistory(result, filename){
+  try{
+    const hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+    hist.unshift({
+      drug:result.packaging.drugName,
+      verdict:result.verdict.verdict,
+      score:result.verdict.score,
+      filename:filename||'scan',
+      ts:Date.now(),
+      result
+    });
+    localStorage.setItem(HIST_KEY,JSON.stringify(hist.slice(0,10)));
+    renderHistory();
+  }catch(e){}
+}
+function loadHistory(){
+  try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){return []}
+}
+function clearHistory(){
+  localStorage.removeItem(HIST_KEY);
+  document.getElementById('historySection').style.display='none';
+}
+function renderHistory(){
+  const hist=loadHistory();
+  const sec=document.getElementById('historySection');
+  const scroll=document.getElementById('historyScroll');
+  if(!hist.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  scroll.innerHTML=hist.map((h,i)=>{
+    const cls=vc(h.verdict);
+    const age=timeSince(h.ts);
+    return`<div class="hist-item ${cls}" onclick="replayHistory(${i})">
+      <div class="hist-drug">${h.drug}</div>
+      <div class="hist-score">${ve(h.verdict)} Score: ${h.score}/100</div>
+      <div class="hist-time">${age}</div>
+    </div>`;
+  }).join('');
+}
+function replayHistory(i){
+  const hist=loadHistory();
+  if(hist[i])render(hist[i].result);
+}
+function timeSince(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'just now';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+// ── PDF EXPORT ──
+function exportPDF(){
+  document.title='MediVerify — '+(lastResult?.packaging?.drugName||'Report');
+  window.print();
+}
+
+// ── CONFIDENCE BREAKDOWN ──
+function renderScoreBreakdown(r){
+  const {verdict,visualAnalysis,whoAlertMatch,fdaRecord,globalRegistries}=r;
+  const rows=[];
+
+  // Visual quality (0-30 pts)
+  const vq=visualAnalysis.printQualityScore;
+  const vqPts=Math.round(vq*0.3);
+  rows.push({label:'Visual Quality',val:vq+'/100',pct:vq,pts:vqPts,max:30,good:vq>=70});
+
+  // FDA found (0-25 pts)
+  const fdaFound=fdaRecord&&fdaRecord.brandName;
+  rows.push({label:'FDA Registry',val:fdaFound?'Found':'Not found',pct:fdaFound?100:0,pts:fdaFound?25:0,max:25,good:!!fdaFound});
+
+  // WHO alert (-30 pts if matched)
+  const whoHit=!!whoAlertMatch;
+  rows.push({label:'WHO Alerts',val:whoHit?'⚠ Alert match':'Clean',pct:whoHit?100:0,pts:whoHit?-30:20,max:20,good:!whoHit,warn:whoHit});
+
+  // Global registries
+  const foundCount=globalRegistries?.filter(r=>r.found).length||0;
+  const regPts=Math.min(foundCount*5,15);
+  rows.push({label:'Global Registries',val:foundCount+' found',pct:(foundCount/Math.max(globalRegistries?.length||1,1))*100,pts:regPts,max:15,good:foundCount>0});
+
+  // Red flags (-5 each, up to -25)
+  const flagCount=verdict.redFlags?.length||0;
+  const flagPts=-Math.min(flagCount*5,25);
+  rows.push({label:'Red Flags',val:flagCount===0?'None':flagCount+' detected',pct:flagCount===0?0:Math.min(flagCount/5*100,100),pts:flagPts,max:0,good:flagCount===0,neg:flagCount>0});
+
+  // Positive signals (+2 each, up to +10)
+  const posCount=verdict.positiveSignals?.length||0;
+  const posPts=Math.min(posCount*2,10);
+  rows.push({label:'Positive Signals',val:posCount+' signals',pct:(posCount/5)*100,pts:posPts,max:10,good:posCount>0});
+
+  document.getElementById('breakdownRows').innerHTML=rows.map(row=>{
+    const color=row.warn?'var(--red)':row.neg?'var(--red)':row.good?'var(--green)':'var(--muted)';
+    const deltaClass=row.pts>0?'pos':row.pts<0?'neg':'neu';
+    const deltaStr=row.pts>0?'+'+row.pts:String(row.pts);
+    return`<div class="bk-row">
+      <div class="bk-label">${row.label}</div>
+      <div class="bk-bar-track"><div class="bk-bar-fill" style="width:${Math.abs(row.pct)}%;background:${color}"></div></div>
+      <div class="bk-val" style="color:${color}">${row.val}</div>
+      <div class="bk-delta ${deltaClass}">${deltaStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── BATCH MODE ──
+function toggleBatchMode(on){
+  batchMode=on;
+  const q=document.getElementById('batchQueue');
+  q.classList.toggle('show',on);
+  const dz=document.getElementById('dropZone');
+  dz.style.display=on?'none':'block';
+  document.getElementById('preview-wrap').style.display='none';
+  document.getElementById('batchResults').style.display='none';
+  if(!on){batchFiles=[];renderBatchGrid();}
+}
+function addBatchFiles(files){
+  for(const f of files){
+    if(f.type.startsWith('image/')&&batchFiles.length<12)batchFiles.push(f);
+  }
+  renderBatchGrid();
+  document.getElementById('batchRunBtn').disabled=batchFiles.length===0;
+  document.getElementById('batchCount').textContent=batchFiles.length;
+}
+function removeBatchFile(i){
+  batchFiles.splice(i,1);
+  renderBatchGrid();
+  document.getElementById('batchRunBtn').disabled=batchFiles.length===0;
+  document.getElementById('batchCount').textContent=batchFiles.length;
+}
+function renderBatchGrid(){
+  const grid=document.getElementById('batchGrid');
+  const thumbs=batchFiles.map((f,i)=>{
+    const url=URL.createObjectURL(f);
+    return`<div class="batch-thumb">
+      <img src="${url}" alt="${f.name}"/>
+      <button class="batch-thumb-rm" onclick="removeBatchFile(${i})">✕</button>
+    </div>`;
+  }).join('');
+  grid.innerHTML=thumbs+`<label class="batch-add" title="Add more">
+    <input type="file" accept="image/*" multiple style="display:none" onchange="addBatchFiles(this.files)"/>
+    <span style="font-size:1.5rem">+</span><span>Add</span>
+  </label>`;
+}
+async function runBatch(){
+  if(!batchFiles.length)return;
+  const btn=document.getElementById('batchRunBtn');
+  btn.disabled=true;btn.textContent='Analyzing...';
+  const tbody=document.getElementById('batchTableBody');
+  tbody.innerHTML='';
+  document.getElementById('batchResults').style.display='block';
+  let i=0;
+  for(const file of batchFiles){
+    i++;
+    const row=document.createElement('tr');
+    row.innerHTML=`<td>${i}</td><td>${file.name.replace(/\.[^.]+$/,'')}</td><td colspan="3"><em style="color:var(--muted)">Analyzing…</em></td>`;
+    tbody.appendChild(row);
+    try{
+      const fd=new FormData();fd.append('image',file);
+      const res=await fetch('/api/analyze?lang='+currentLang,{method:'POST',body:fd});
+      const data=await res.json();
+      if(data.success){
+        const r=data.result;
+        const cls=vc(r.verdict.verdict);
+        const flag=r.verdict.redFlags?.[0]?.description||'—';
+        row.innerHTML=`<td>${i}</td>
+          <td style="font-weight:600">${r.packaging.drugName}</td>
+          <td><span class="batch-badge ${cls}">${ve(r.verdict.verdict)} ${r.verdict.verdict.replace(/-/g,' ')}</span></td>
+          <td style="font-weight:700;color:${sc(r.verdict.score)}">${r.verdict.score}/100</td>
+          <td style="font-size:.78rem;color:var(--muted)">${flag.slice(0,50)}</td>`;
+        saveToHistory(r,file.name);
+      }else{
+        row.innerHTML=`<td>${i}</td><td>${file.name}</td><td colspan="3" style="color:var(--red)">Failed</td>`;
+      }
+    }catch(e){
+      row.innerHTML=`<td>${i}</td><td>${file.name}</td><td colspan="3" style="color:var(--red)">Error</td>`;
+    }
+  }
+  btn.disabled=false;btn.textContent=`🔍 Analyze All (${batchFiles.length})`;
+  document.getElementById('batchResults').scrollIntoView({behavior:'smooth'});
+}
 
 // ── Language data (loaded from API) ──
 let LANGS={};
@@ -476,14 +775,11 @@ let LANGS={};
     const r=await fetch('/api/languages');
     LANGS=await r.json();
     buildLangGrid();
-    // Auto-detect browser language
     const bl=(navigator.language||'en').split('-')[0];
     if(LANGS[bl])setLang(bl,false);
   }catch(e){}
-  // Register service worker
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  }
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  renderHistory();
 })();
 
 function buildLangGrid(){
@@ -725,6 +1021,14 @@ function render(r){
   }
 
   document.getElementById('disclaimerBox').textContent=disclaimer;
+
+  // Score breakdown
+  renderScoreBreakdown(r);
+
+  // Save to history
+  lastResult=r;
+  saveToHistory(r, currentFile?.name||'scan');
+
   document.getElementById('results').style.display='block';
   document.getElementById('results').scrollIntoView({behavior:'smooth'});
 }
