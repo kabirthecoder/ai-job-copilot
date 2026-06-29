@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: devmind-api
+    runtime: node
+    rootDir: devmind
+    buildCommand: npm install && npm run build
+    startCommand: node server.mjs
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: DEVMIND_MODEL
+        value: gemini-2.5-flash
+      - key: DEVMIND_STORE_PATH
+        value: /tmp/devmind-store
